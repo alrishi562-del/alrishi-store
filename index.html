@@ -80,6 +80,25 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .pp{font-size:17px;font-weight:800}.pp small{font-size:11px;font-weight:500;color:var(--mu)}
 .add{border-radius:14px;font-weight:700}
 .cb{position:fixed;left:12px;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));background:var(--pr);color:#fff;border-radius:18px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:8}
+.bnr{position:relative;margin:12px 16px 4px;height:132px;border-radius:22px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.bn{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;gap:6px;color:#fff;opacity:0;transform:translateX(34px);transition:opacity .6s,transform .6s;overflow:hidden}
+.bn.on{opacity:1;transform:none}
+.bn h2{font-size:21px;font-weight:800;position:relative;max-width:70%}
+.bn p{font-size:13px;opacity:.95;position:relative;max-width:70%}
+.bn:before{content:"";position:absolute;width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.14);left:-40px;top:-60px;animation:fl 6s ease-in-out infinite}
+.bn .ic{position:absolute;left:16px;bottom:10px;font-size:62px;animation:bob 3s ease-in-out infinite}
+@keyframes fl{50%{transform:translate(24px,18px) scale(1.15)}}
+@keyframes bob{50%{transform:translateY(-9px) rotate(-4deg)}}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px}
+.dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.55);transition:.3s}
+.dots i.on{width:18px;background:#fff}
+#offs .sec{padding:0 16px;margin:14px 0 8px}
+.hs{display:flex;gap:12px;overflow-x:auto;padding:4px 16px 14px;scroll-snap-type:x mandatory}
+.hs .p{min-width:172px;max-width:172px;scroll-snap-align:start}
+.off{position:absolute;top:10px;left:10px;background:#e03131;color:#fff;border-radius:12px;padding:3px 9px;font-weight:800;font-size:13px;z-index:2;animation:pls 1.6s ease-in-out infinite}
+@keyframes pls{50%{transform:scale(1.1)}}
+.was{color:var(--mu);font-size:13px;font-weight:500}
+@media(prefers-reduced-motion:reduce){.bn,.bn:before,.bn .ic,.off{animation:none;transition:none}}
 </style>
 </head>
 <body>
@@ -106,8 +125,16 @@ const GI={},sel={};const gk=t=>GI[t]??(GI[t]=Object.keys(GI).length);
 const nm=p=>p.g?p.g+" ("+p.u+")":p.n;
 const grp=l=>{const m=new Map();l.forEach(p=>{const k=p.g||"#"+p.id;if(!m.has(k))m.set(k,{t:p.g||p.n,k:gk(k),v:[]});m.get(k).v.push(p)});m.forEach(g=>g.v.sort((a,b)=>(a.o||0)-(b.o||0)));return [...m.values()]};
 const selP=g=>g.v.find(x=>x.id==sel[g.k])||g.v[0];
-const card=g=>{const p=selP(g),f=g.v[0];return `<div class="p"><div class="img" data-s="${esc(f.s||"")}"><span class="em">${f.e||"🛍️"}</span>${f.img?`<img class="ph" src="${f.img}" alt="">`:`<img class="ph" src="img/${f.id}.jpg" alt="" onerror="this.remove()">`}</div><div class="pb"><div class="pn">${esc(g.t)}</div>${g.v.length>1?`<div class="us">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pickU(${g.k},${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="sub">${esc(p.u)}</div>`:"")}<div class="pp">${fm(p.p)} <small>${cur()}</small></div><button class="add" onclick="add(${p.id})">＋ أضف للسلة</button></div></div>`};
-const pickU=(k,id)=>{sel[k]=id;$("grid").innerHTML=gridH()};
+const card=g=>{const p=selP(g),f=g.v[0];return `<div class="p"><div class="img" data-s="${esc(f.s||"")}"><span class="em">${f.e||"🛍️"}</span>${f.img?`<img class="ph" src="${f.img}" alt="">`:`<img class="ph" src="img/${f.id}.jpg" alt="" onerror="this.remove()">`}${p.old>p.p?`<span class="off">-${Math.round((p.old-p.p)/p.old*100)}%</span>`:""}</div><div class="pb"><div class="pn">${esc(g.t)}</div>${g.v.length>1?`<div class="us">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pickU(${g.k},${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="sub">${esc(p.u)}</div>`:"")}<div class="pp">${p.old>p.p?`<s class="was">${fm(p.old)}</s> `:""}${fm(p.p)} <small>${cur()}</small></div><button class="add" onclick="add(${p.id})">＋ أضف للسلة</button></div></div>`};
+const pickU=(k,id)=>{sel[k]=id;$("grid").innerHTML=gridH();if($("offs"))$("offs").innerHTML=offsH()};
+const offsH=()=>{const l=D.products.filter(p=>!p.hide&&p.old>p.p);if(!l.length||q.trim()||cat!="الكل")return "";return `<div class="sec">🔥 التخفيضات</div><div class="hs">${grp(l).map(card).join("")}</div>`};
+const bnrH=()=>{const s=S(),offs=D.products.some(p=>!p.hide&&p.old>p.p);
+  const b=(s.banners&&s.banners.length)?s.banners:[
+    {t:"أهلاً بك في "+s.name,s:(s.eta?"توصيل "+s.eta:"")+(s.minOrder?" • أقل طلب "+fm(s.minOrder)+" "+cur():""),c:"#0f7b5f,#1fb58a",e:"🛒"},
+    ...(offs?[{t:"🔥 تخفيضات اليوم",s:"أسعار مخفضة على منتجات مختارة",c:"#e8590c,#f08c00",e:"🏷️"}]:[]),
+    {t:"وفّر أكثر بالكرتون",s:"سعر الكرتون أوفر من شراء الحبة",c:"#5f3dc4,#4263eb",e:"📦"}];
+  return `<div class="bnr">${b.map((x,i)=>{const c=(x.c||"#0f7b5f,#1fb58a").split(",");return `<div class="bn${i?"":" on"}" style="background:linear-gradient(135deg,${c[0]},${c[1]||c[0]})"><h2>${esc(x.t)}</h2><p>${esc(x.s||"")}</p><span class="ic">${x.e||""}</span></div>`}).join("")}<div class="dots">${b.map((x,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div></div>`};
+setInterval(()=>{const s=document.querySelectorAll(".bn");if(s.length<2)return;const d=document.querySelectorAll(".dots i");let c=[...s].findIndex(x=>x.classList.contains("on"));c=(c+1)%s.length;s.forEach((x,i)=>x.classList.toggle("on",i==c));d.forEach((x,i)=>x.classList.toggle("on",i==c))},4000);
 const cartBar=()=>cartN()&&tab=="h"?`<div class="cb" onclick="go('c')"><span>🛒 ${cartN()} منتج</span><b>${fm(subtotal())} ${cur()}</b><span>عرض السلة ‹</span></div>`:"";
 function gridH(){
   const s=q.trim();let h="";
@@ -124,10 +151,11 @@ function gridH(){
 }
 function home(){
   const s=S(),ss=cat!="الكل"?(D.subs[cat]||[]):[];
-  return `<header class="hd"><div class="brand">${s.logo?`<img class="logo" src="${s.logo}" alt="">`:""}<div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.hours||"")}</div>${s.eta?`<div class="pill">🚚 ${esc(s.eta)}</div>`:""}</div></div><input class="search" placeholder="🔍 ابحث عن منتج..." value="${esc(q)}" oninput="q=this.value;$('grid').innerHTML=gridH()"></header>
+  return `<header class="hd"><div class="brand">${s.logo?`<img class="logo" src="${s.logo}" alt="">`:""}<div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.hours||"")}</div>${s.eta?`<div class="pill">🚚 ${esc(s.eta)}</div>`:""}</div></div><input class="search" placeholder="🔍 ابحث عن منتج..." value="${esc(q)}" oninput="q=this.value;$('grid').innerHTML=gridH();$('offs').innerHTML=offsH()"></header>
+  ${bnrH()}
   <div class="chips">${["الكل",...D.cats].map((c,i)=>`<button class="chip ${c==cat?"on":""}" onclick="setCat(${i-1})">${CI[c]?CI[c]+" ":""}${esc(c)}</button>`).join("")}</div>
   ${ss.length?`<div class="chips" style="padding-top:0">${["الكل",...ss].map((c,i)=>`<button class="chip sm ${c==sub?"on":""}" onclick="setSub(${i-1})">${esc(c)}</button>`).join("")}</div>`:""}
-  <div class="grid" id="grid">${gridH()}</div>`;
+  <div id="offs">${offsH()}</div><div class="grid" id="grid">${gridH()}</div>`;
 }
 const setCat=i=>{cat=i<0?"الكل":D.cats[i];sub="الكل";render()};
 const setSub=i=>{sub=i<0?"الكل":D.subs[cat][i];render()};
