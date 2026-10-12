@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light" style="color-scheme: light;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أسواق الريشي</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--tx:#1d1d1b;--mu:#76736b;--pr:#0f7b5f;--pr2:#e3f3ee;--bd:#e8e4da;--bl:#2a1fa0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--card:#1f1f1d;--tx:#f2efe8;--mu:#a09c92;--pr:#35c49b;--pr2:#1b3a31;--bd:#2d2d2a;--bl:#9aa0ff}}
+:root[data-theme="dark"]{--bg:#141413;--card:#1f1f1d;--tx:#f2efe8;--mu:#a09c92;--pr:#35c49b;--pr2:#1b3a31;--bd:#2d2d2a;--bl:#9aa0ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+header{padding:16px 16px 8px}
+h1{margin:0 0 8px;font-size:22px;color:var(--bl)}
+header h1{margin:0}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{height:72px;width:auto;background:#fff;border-radius:16px;padding:6px;border:1px solid var(--bd)}
+.sub{color:var(--mu);font-size:13px;margin-top:2px}
+.search,.f{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:15px;font-family:inherit}
+.search{margin-top:12px}.f{margin-bottom:8px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px}
+.chip{white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:14px;font-family:inherit}
+.chip.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.chip.sm{padding:6px 12px;font-size:13px;background:var(--pr2);border-color:transparent}
+.chip.sm.on{background:var(--pr);color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px}
+.sec{grid-column:1/-1;font-size:18px;font-weight:700;margin-top:10px;border-right:4px solid var(--pr);padding-right:10px}
+.ssub{grid-column:1/-1;font-size:14px;color:var(--pr);font-weight:700}
+.p{background:var(--card);border:1px solid var(--bd);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.img{height:120px;display:flex;align-items:center;justify-content:center;font-size:52px;background:var(--pr2);overflow:hidden}
+.img img,.e img{width:100%;height:100%;object-fit:cover}
+.pb{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.pn{font-size:14px;font-weight:600}.pp{color:var(--pr);font-weight:700}
+.add,.btn{border:0;background:var(--pr);color:#fff;padding:11px;border-radius:12px;font-size:14px;font-family:inherit}
+.add{margin-top:auto}
+.btn{width:100%;font-size:16px;font-weight:700;margin-top:6px}.btn.wa{background:#25a244}.btn.gr{background:var(--mu)}
+.empty{grid-column:1/-1;text-align:center;color:var(--mu);padding:40px 0}.empty.soon{padding:12px 0}
+.pg{padding:16px}
+.row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px;margin-bottom:10px}
+.row .e{font-size:30px;width:52px;height:52px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--pr2);flex:none}
+.row .i{flex:1}
+.q{display:flex;align-items:center;gap:8px}
+.q button,.ic{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:16px}
+.lbl{display:block;font-size:13px;color:var(--mu);margin:6px 2px 4px}
+.box{background:var(--pr2);border-radius:12px;padding:12px;margin:4px 0 8px;font-size:14px;line-height:1.7}
+.tl{display:flex;justify-content:space-between;margin:4px 2px}.tl.b{font-weight:700;font-size:18px;margin-top:8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px;line-height:1.8;white-space:pre-line}
+.card h3{margin:0 0 6px;font-size:16px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;border:0;background:none;color:var(--mu);font-size:12px;position:relative;font-family:inherit}
+nav button.on{color:var(--pr)}nav span{display:block;font-size:22px}
+.badge{position:absolute;top:-4px;right:calc(50% - 22px);background:#d9442f;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+#pv{max-width:140px;border-radius:12px;display:none;margin:4px 0 8px}
+.pk{flex:1;display:block;text-align:center;padding:11px;border-radius:12px;background:var(--mu);color:#fff;font-size:14px}.st{margin:18px 0 6px;font-size:16px;color:var(--bl)}.rw{position:relative;padding-left:52px}.rw .ic{position:absolute;left:10px;top:10px}
+</style>
+</head>
+<body>
+<div id="app"></div><div id="nav"></div><div class="toast" id="ts"></div>
+<script type="application/json" id="data">{"settings":{"name":"أسواق الريشي","whatsapp":"967775099045","cur":"ر.ي","logo":"data:image/jpeg;base64,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","hours":"يومياً من 8 صباحاً حتى 10 مساءً","minOrder":3000,"zones":[{"n":"داخل المركز","fee":1000,"agent":""},{"n":"محطة الفيوش","fee":3000,"agent":""},{"n":"الحجازي","fee":1000,"agent":""},{"n":"بلك 1+2+3","fee":1500,"agent":""}],"wallets":[],"banks":[{"n":"بنك القطيبي","num":"493142151","holder":"مروان محمد ناصر محمد"},{"n":"شركة بيت المال","num":"122599298","holder":"مروان محمد ناصر محمد"}],"returns":"يمكن إرجاع المنتج عند وجود تلف أو اختلاف عن الطلب، بشرط إبلاغنا عبر واتساب فور الاستلام مع صورة للمنتج.","retDays":1,"eta":"خلال ساعتين"},"cats":["مواد غذائية","إكسسوارات","إلكترونيات","ملابس"],"subs":{"مواد غذائية":["أرز وحبوب","معلبات","ألبان","دقيق وقمح","توابل وبيض","نودلز وبسكويت","مشروبات"]},"products":[{"id":1,"n":"رز شاهين 20 كجم","p":42000,"c":"مواد غذائية","s":"أرز وحبوب","e":"🍚"},{"id":2,"n":"فاصوليا لونا","p":1100,"c":"مواد غذائية","s":"معلبات","e":"🫘"},{"id":3,"n":"فاصوليا الهناء","p":1200,"c":"مواد غذائية","s":"معلبات","e":"🫘"},{"id":4,"n":"تونة الفخامة كبير","p":2300,"c":"مواد غذائية","s":"معلبات","e":"🐟"},{"id":5,"n":"زبادي الهناء","p":500,"c":"مواد غذائية","s":"ألبان","e":"🥛"},{"id":6,"n":"حقين الهناء","p":1000,"c":"مواد غذائية","s":"ألبان","e":"🥛"},{"id":7,"n":"حليب بقري صغير","p":600,"c":"مواد غذائية","s":"ألبان","e":"🥛"},{"id":8,"n":"حليب بقري كبير","p":1100,"c":"مواد غذائية","s":"ألبان","e":"🥛"},{"id":9,"n":"حليب ممتاز 170 جرام","p":800,"c":"مواد غذائية","s":"ألبان","e":"🥫"},{"id":10,"n":"حليب ممتاز 410 جرام","p":1500,"c":"مواد غذائية","s":"ألبان","e":"🥫"},{"id":11,"n":"دقيق السنابل 25 كيلو (كيس)","p":22450,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":12,"n":"دقيق السنابل 10 كيلو (كيس)","p":9450,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":13,"n":"بر السنابل 25 كيلو (كيس)","p":21300,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":14,"n":"بر السنابل 10 كيلو (كيس)","p":9000,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":15,"n":"فاصوليا الهناء (كرتون)","p":22900,"c":"مواد غذائية","s":"معلبات","e":"🫘"},{"id":16,"n":"فاصوليا لونا (كرتون)","p":24000,"c":"مواد غذائية","s":"معلبات","e":"🫘"},{"id":17,"n":"تونة هومي كبير 48×160 جم (كرتون)","p":89100,"c":"مواد غذائية","s":"معلبات","e":"🐟"},{"id":18,"n":"مركز يماني 1/8 × 44 حبة (كرتون)","p":22000,"c":"مواد غذائية","s":"معلبات","e":"🍅"},{"id":19,"n":"شطة المودة 55 حبة (كرتون)","p":5200,"c":"مواد غذائية","s":"توابل وبيض","e":"🌶️"},{"id":20,"n":"بيض كبير (كرتون)","p":47850,"c":"مواد غذائية","s":"توابل وبيض","e":"🥚"},{"id":21,"n":"اندومي كاري 40 (كرتون)","p":15250,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍜"},{"id":22,"n":"اندومي خاص 40 (كرتون)","p":15250,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍜"},{"id":23,"n":"بسكوت أبو ولد 48 (كرتون)","p":26650,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍪"},{"id":24,"n":"زعقة البطاطي (كيس 50 حبة)","p":3050,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🥔"},{"id":25,"n":"حليب ممتاز صغير 48 (كرتون)","p":34550,"c":"مواد غذائية","s":"ألبان","e":"🥫"},{"id":26,"n":"حليب ممتاز كبير 24 (كرتون)","p":35000,"c":"مواد غذائية","s":"ألبان","e":"🥫"},{"id":27,"n":"حليب بقري صغير 28 (كرتون)","p":15850,"c":"مواد غذائية","s":"ألبان","e":"🥛"},{"id":28,"n":"ماء زلال 20×750 (كرتون)","p":3850,"c":"مواد غذائية","s":"مشروبات","e":"💧"},{"id":29,"n":"عصير كاتجو عايلي (كرتون)","p":13900,"c":"مواد غذائية","s":"مشروبات","e":"🧃"},{"id":30,"n":"تونة هومي كبير 160 جم (حبة)","p":1950,"c":"مواد غذائية","s":"معلبات","e":"🐟"},{"id":31,"n":"مركز يماني 1/8 (حبة)","p":525,"c":"مواد غذائية","s":"معلبات","e":"🍅"},{"id":32,"n":"شطة المودة (حبة)","p":100,"c":"مواد غذائية","s":"توابل وبيض","e":"🌶️"},{"id":33,"n":"اندومي كاري (حبة)","p":400,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍜"},{"id":34,"n":"اندومي خاص (حبة)","p":400,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍜"},{"id":35,"n":"بسكوت أبو ولد (حبة)","p":600,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍪"},{"id":36,"n":"ماء زلال 750 مل (حبة)","p":225,"c":"مواد غذائية","s":"مشروبات","e":"💧"},{"id":37,"n":"زعقة البطاطي (حبة)","p":65,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🥔"},{"id":38,"n":"بر السنابل 5 كيلو (حبة)","p":4700,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":39,"n":"بر السنابل 5 كيلو × 4 (كيس)","p":17850,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":40,"n":"بيض كبير (حبة)","p":140,"c":"مواد غذائية","s":"توابل وبيض","e":"🥚"},{"id":41,"n":"بيض كبير (طبق 30 حبة)","p":4000,"c":"مواد غذائية","s":"توابل وبيض","e":"🥚"},{"id":42,"n":"نخالة الغلال 40 كجم (كيس)","p":19550,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":43,"n":"شراب الطاقة لفت أب (كرتون)","p":19400,"c":"مواد غذائية","s":"مشروبات","e":"⚡"},{"id":44,"n":"شراب الطاقة لفت أب (حبة)","p":675,"c":"مواد غذائية","s":"مشروبات","e":"⚡"},{"id":45,"n":"حمضيات طويل (كرتون)","p":14750,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":46,"n":"حمضيات طويل (حبة)","p":525,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":47,"n":"بيبسي طويل (كرتون)","p":14750,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":48,"n":"بيبسي طويل (حبة)","p":500,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":49,"n":"بيبسي عائلي (كرتون)","p":13650,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":50,"n":"بيبسي عائلي (حبة)","p":2400,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":51,"n":"سفن أب طويل (كرتون)","p":14750,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":52,"n":"سفن أب طويل (حبة)","p":525,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":53,"n":"شراب دريم منوع 250 مل (كرتون)","p":8300,"c":"مواد غذائية","s":"مشروبات","e":"🧃"},{"id":54,"n":"شراب دريم منوع 250 مل (حبة)","p":300,"c":"مواد غذائية","s":"مشروبات","e":"🧃"},{"id":55,"n":"شراب ريم (كرتون)","p":8600,"c":"مواد غذائية","s":"مشروبات","e":"🧃"},{"id":56,"n":"شراب ريم (حبة)","p":300,"c":"مواد غذائية","s":"مشروبات","e":"🧃"},{"id":57,"n":"راني علب منجا (كرتون)","p":25550,"c":"مواد غذائية","s":"مشروبات","e":"🥭"},{"id":58,"n":"راني علب منجا (حبة)","p":900,"c":"مواد غذائية","s":"مشروبات","e":"🥭"},{"id":59,"n":"فاخر عائلي 6 حبات (كرتون)","p":11750,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":60,"n":"دلسي أسود صغير 24 حبة (كرتون)","p":11550,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":61,"n":"دلسي تفاح صغير 24 حبة (كرتون)","p":11550,"c":"مواد غذائية","s":"مشروبات","e":"🍎"},{"id":62,"n":"جبن بولند 12×12 (كرتون)","p":45900,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":63,"n":"جبن بولند 12×12 (حبة)","p":4000,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":64,"n":"جبن غولدن 24×24 (كرتون)","p":46600,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":65,"n":"جبن غولدن 24×24 (حبة)","p":2050,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":66,"n":"جبن سالم 24 (كرتون)","p":77950,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":67,"n":"جبن سالم 24 (حبة)","p":3400,"c":"مواد غذائية","s":"ألبان","e":"🧀"},{"id":68,"n":"شاهي الكبوس 500 جم (كرتون 20 حبة)","p":102250,"c":"مواد غذائية","s":"مشروبات","e":"🍵"},{"id":69,"n":"شاهي الكبوس 500 جم (حبة)","p":5350,"c":"مواد غذائية","s":"مشروبات","e":"🍵"},{"id":70,"n":"شاهي الكبوس 250 جم (كرتون 40 حبة)","p":102250,"c":"مواد غذائية","s":"مشروبات","e":"🍵"},{"id":71,"n":"شاهي الكبوس 250 جم (حبة)","p":2700,"c":"مواد غذائية","s":"مشروبات","e":"🍵"},{"id":72,"n":"ويفر بوشنكي 12×50 (كرتون)","p":52850,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍫"},{"id":73,"n":"ويفر بوشنكي (باكت 50 حبة)","p":4450,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍫"},{"id":74,"n":"ويفر بوشنكي (حبة)","p":100,"c":"مواد غذائية","s":"نودلز وبسكويت","e":"🍫"},{"id":75,"n":"طاحونية تنك الفارس 14 كجم (تنك)","p":49550,"c":"مواد غذائية","s":"معلبات","e":"🫙"},{"id":76,"n":"طاحونية الفارس (كيلو)","p":3700,"c":"مواد غذائية","s":"معلبات","e":"🫙"},{"id":77,"n":"دلسي أسود صغير (حبة)","p":500,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":78,"n":"دلسي تفاح صغير (حبة)","p":500,"c":"مواد غذائية","s":"مشروبات","e":"🍎"},{"id":79,"n":"فاخر عائلي (حبة)","p":2050,"c":"مواد غذائية","s":"مشروبات","e":"🥤"},{"id":80,"n":"بر السنابل 1 كيلو (كيس 20 حبة)","p":18600,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"},{"id":81,"n":"بر السنابل 1 كيلو (حبة)","p":975,"c":"مواد غذائية","s":"دقيق وقمح","e":"🌾"}]}</script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const D=JSON.parse($("data").textContent),S=()=>D.settings,cur=()=>esc(S().cur);
+const LS={g(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let tab="h",cat="الكل",sub="الكل",q="",admin=false,av="p",editId=null,tmpImg="",ed=null,rcpt=null,rcptUrl="",rt={reason:"تالف"},delId=null;
+let cart=LS.g("cart",{}),prof=LS.g("prof",{}),orders=LS.g("orders",[]),co={zone:-1,pay:-1};
+const fm=n=>Number(n).toLocaleString("en-US"),P=id=>D.products.find(p=>p.id==id);
+const toast=m=>{const t=$("ts");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)};
+const thumb=p=>p.img?`<img src="${p.img}" alt="">`:(p.e||"🛍️");
+const L=t=>t.split("\n").map(x=>x.trim()).filter(Boolean);
+const cartN=()=>Object.values(cart).reduce((a,b)=>a+b,0);
+const subtotal=()=>Object.entries(cart).reduce((t,[id,n])=>t+(P(id)?P(id).p*n:0),0);
+const pays=()=>[...S().wallets.map(w=>({t:"محفظة "+w.n,d:w.num+(w.holder?" — باسم "+w.holder:"")})),...S().banks.map(b=>({t:"حوالة/بنك "+b.n,d:b.num+(b.holder?" — باسم "+b.holder:"")}))];
+
+/* ---------- المتجر ---------- */
+const card=p=>`<div class="p"><div class="img">${thumb(p)}</div><div class="pb"><div class="pn">${esc(p.n)}</div><div class="pp">${fm(p.p)} ${cur()}</div><button class="add" onclick="add(${p.id})">أضف للسلة</button></div></div>`;
+function gridH(){
+  const s=q.trim();let h="";
+  D.cats.filter(c=>cat=="الكل"||c==cat).forEach(c=>{
+    const all=D.products.filter(p=>!p.hide&&p.c==c&&p.n.includes(s));
+    const ss=D.subs[c]||[],pick=sub=="الكل"||cat!=c,parts=[];
+    ss.filter(x=>pick||x==sub).forEach(x=>{const l=all.filter(p=>p.s==x);if(l.length)parts.push([x,l])});
+    const rest=all.filter(p=>!ss.includes(p.s));if(rest.length&&pick)parts.push([null,rest]);
+    if(!parts.length){if(!s)h+=`<div class="sec">${esc(c)}</div><div class="empty soon">🚧 قريباً</div>`;return}
+    h+=`<div class="sec">${esc(c)}</div>`;
+    parts.forEach(([x,l])=>{if(x)h+=`<div class="ssub">${esc(x)}</div>`;h+=l.map(card).join("")});
+  });
+  return h||'<div class="empty">لا توجد نتائج</div>';
+}
+function home(){
+  const s=S(),ss=cat!="الكل"?(D.subs[cat]||[]):[];
+  return `<header><div class="brand">${s.logo?`<img class="logo" src="${s.logo}" alt="">`:""}<div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.hours||"")}</div></div></div><input class="search" placeholder="🔍 ابحث عن منتج..." value="${esc(q)}" oninput="q=this.value;$('grid').innerHTML=gridH()"></header>
+  <div class="chips">${["الكل",...D.cats].map((c,i)=>`<button class="chip ${c==cat?"on":""}" onclick="setCat(${i-1})">${esc(c)}</button>`).join("")}</div>
+  ${ss.length?`<div class="chips" style="padding-top:0">${["الكل",...ss].map((c,i)=>`<button class="chip sm ${c==sub?"on":""}" onclick="setSub(${i-1})">${esc(c)}</button>`).join("")}</div>`:""}
+  <div class="grid" id="grid">${gridH()}</div>`;
+}
+const setCat=i=>{cat=i<0?"الكل":D.cats[i];sub="الكل";render()};
+const setSub=i=>{sub=i<0?"الكل":D.subs[cat][i];render()};
+function add(id){cart[id]=(cart[id]||0)+1;LS.s("cart",cart);toast("تمت الإضافة ✓");$("nav").innerHTML=navV()}
+function chg(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];LS.s("cart",cart);render()}
+
+/* ---------- السلة والطلب ---------- */
+function cartV(){
+  const e=Object.entries(cart).filter(([id])=>P(id)),s=S(),py=pays();
+  if(!e.length)return `<div class="pg"><h1>🛒 السلة</h1><div class="empty">السلة فارغة</div></div>`;
+  const sb=subtotal(),z=co.zone>=0?s.zones[co.zone]:null,fee=z?+z.fee:0;
+  return `<div class="pg"><h1>🛒 السلة</h1>
+  ${e.map(([id,n])=>{const p=P(id);return `<div class="row"><div class="e">${thumb(p)}</div><div class="i"><div>${esc(p.n)}</div><div class="pp">${fm(p.p*n)} ${cur()}</div></div><div class="q"><button onclick="chg(${id},1)">+</button><b>${n}</b><button onclick="chg(${id},-1)">−</button></div></div>`}).join("")}
+  <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
+  <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
+  <label class="lbl">منطقة التوصيل</label><select class="f" onchange="co.zone=+this.value;render()"><option value="-1">اختر المنطقة</option>${s.zones.map((x,i)=>`<option value="${i}" ${co.zone==i?"selected":""}>${esc(x.n)} — ${fm(x.fee)} ${cur()}</option>`).join("")}</select>
+  ${s.eta?`<div class="sub">مدة التوصيل: ${esc(s.eta)}</div>`:""}<label class="lbl">العنوان التفصيلي</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">
+  ${py.length?`<label class="lbl">طريقة الدفع</label><select class="f" onchange="co.pay=+this.value;render()"><option value="-1">اختر طريقة الدفع</option>${py.map((x,i)=>`<option value="${i}" ${co.pay==i?"selected":""}>${esc(x.t)}</option>`).join("")}</select>${co.pay>=0?`<div class="box">حوّل المبلغ إلى:<br><b>${esc(py[co.pay].d)}</b><br>ثم صوّر سند الحوالة وأرفقه هنا:</div>${rcBlock()}`:""}`:""}
+  <div class="tl"><span>المنتجات</span><span>${fm(sb)} ${cur()}</span></div>
+  <div class="tl"><span>التوصيل${z?" ("+esc(z.n)+")":""}</span><span>${z?fm(fee)+" "+cur():"—"}</span></div>
+  <div class="tl b"><span>الإجمالي</span><span>${fm(sb+fee)} ${cur()}</span></div>
+  ${s.minOrder?`<div class="sub">الحد الأدنى للطلب ${fm(s.minOrder)} ${cur()}</div>`:""}
+  <button class="btn wa" onclick="order()">إرسال الطلب عبر واتساب</button></div>`;
+}
+function shrink(f,max,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);const u=c.toDataURL("image/jpeg",.75);c.toBlob(b=>cb(u,new File([b],"photo.jpg",{type:"image/jpeg"})),"image/jpeg",.75)};im.onerror=()=>cb(r.result,f);im.src=r.result};r.onerror=()=>toast("تعذّر قراءة الصورة، جرّب صورة ثانية");r.readAsDataURL(f)}
+const pickRc=i=>{const f=i.files[0];if(f){shrink(f,1000,(u,b)=>{rcpt=b;rcptUrl=u;render();toast("تم إرفاق السند ✅")});setTimeout(()=>{try{i.value=""}catch(e){}},0)}};
+const pickRt=i=>{const f=i.files[0];if(f)shrink(f,1000,(u,b)=>{rt.file=b;rt.url=u;render()})};
+const pickLogo=i=>{const f=i.files[0];if(f)shrink(f,220,u=>{ed.logo=u;render()})};
+const pickBtns=h=>`<div class="tl" style="gap:8px"><label class="pk">📷 تصوير<input type="file" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="${h}(this)"></label><label class="pk">🖼️ إرفاق صورة<input type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="${h}(this)"></label></div>`;
+const rcBlock=()=>`<label class="lbl">صورة سند الحوالة</label>`+pickBtns("pickRc")+`<div class="sub">لو ما اشتغلت الكاميرا اضغط «إرفاق صورة» واختر الكاميرا أو المعرض، أو أرسل السند في واتساب بعد الطلب.</div>`+(rcptUrl?`<img src="${rcptUrl}" alt="" style="max-width:140px;border-radius:12px;margin:6px 0">`:"");
+function sendWa(msg,file,ok){
+  const wa=()=>{window.open("https://wa.me/"+S().whatsapp+"?text="+encodeURIComponent(msg),"_blank");ok()};
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){toast("اختر واتساب ثم محادثة المتجر "+S().whatsapp);navigator.share({files:[file],text:msg}).then(ok).catch(e=>{if(!e||e.name!="AbortError")wa()})}
+  else{wa();if(file)toast("أرفق صورة السند داخل محادثة واتساب")}
+}
+function order(){
+  const e=Object.entries(cart).filter(([id])=>P(id)),s=S(),py=pays();
+  if(!prof.name||!prof.phone||!prof.addr)return toast("أكمل الاسم والجوال والعنوان");
+  if(co.zone<0)return toast("اختر منطقة التوصيل");
+  if(py.length&&co.pay<0)return toast("اختر طريقة الدفع");
+  const sb=subtotal();if(s.minOrder&&sb<s.minOrder)return toast("الحد الأدنى للطلب "+fm(s.minOrder)+" "+s.cur);
+  if(py.length&&!rcpt&&!co.noRc){co.noRc=true;return toast("لم تُرفق صورة السند. اضغط إرسال مرة أخرى للمتابعة بدونها")}
+  const z=s.zones[co.zone],tot=sb+ +z.fee;
+  const lines=e.map(([id,n])=>{const p=P(id);return `• ${p.n} × ${n} = ${fm(p.p*n)}`}).join("\n");
+  const msg=`طلب جديد من ${s.name}\n\n${lines}\n\nالمنتجات: ${fm(sb)} ${s.cur}\nالتوصيل (${z.n}): ${fm(z.fee)} ${s.cur}\nالإجمالي: ${fm(tot)} ${s.cur}\n\nالاسم: ${prof.name}\nالجوال: ${prof.phone}\nالعنوان: ${prof.addr}\n${z.agent?"المندوب: "+z.agent+"\n":""}الدفع: ${py.length?py[co.pay].t+(rcpt?"\n(مرفق صورة السند)":"\n(سأرسل صورة السند لاحقاً)"):"—"}`;
+  sendWa(msg,py.length?rcpt:null,()=>{orders.unshift({d:new Date().toLocaleDateString("ar"),t:tot,n:e.length});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
+}
+function sendReturn(){
+  if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
+  if(!(rt.prod||"").trim())return toast("اكتب اسم المنتج المراد إرجاعه");
+  const msg=`طلب إرجاع — ${S().name}\n\nالاسم: ${prof.name}\nالجوال: ${prof.phone}\nالمنتج: ${rt.prod}\nالسبب: ${rt.reason}\n${rt.note?"التفاصيل: "+rt.note+"\n":""}${rt.file?"(مرفق صورة المنتج)":""}`;
+  sendWa(msg,rt.file||null,()=>{rt={reason:"تالف"};render()});
+}
+
+/* ---------- حسابي والمزيد ---------- */
+function acct(){
+  return `<div class="pg"><h1>👤 حسابي</h1><div class="sub" style="margin-bottom:10px">بياناتك تُحفظ على جوالك فقط لتسريع الطلب القادم.</div>
+  <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
+  <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
+  <label class="lbl">العنوان</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">
+  <h1 style="margin-top:18px">طلباتي السابقة</h1>
+  ${orders.length?orders.map(o=>`<div class="row"><div class="i">${esc(o.d)} — ${o.n} منتج</div><b class="pp">${fm(o.t)} ${cur()}</b></div>`).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
+}
+function more(){
+  const s=S(),py=pays();
+  return `<div class="pg"><h1>☰ المزيد</h1>
+  <div class="card"><h3>🚚 التوصيل</h3>${s.zones.map(z=>`${esc(z.n)}: ${fm(z.fee)} ${cur()}`).join("\n")}${s.eta?`\nمدة التوصيل: ${esc(s.eta)}`:""}${s.minOrder?`\nالحد الأدنى للطلب: ${fm(s.minOrder)} ${cur()}`:""}${s.hours?`\nأوقات العمل: ${esc(s.hours)}`:""}</div>
+  <div class="card"><h3>💳 طرق الدفع</h3>${py.length?py.map(x=>esc(x.t)+": "+esc(x.d)).join("\n"):"تواصل معنا لمعرفة طرق الدفع"}</div>
+  <div class="card"><h3>↩️ سياسة الإرجاع</h3>${s.retDays?`مدة الإرجاع: ${s.retDays} يوم من الاستلام\n`:""}${esc(s.returns)}</div>
+  <div class="card" style="white-space:normal"><h3>↩️ طلب إرجاع</h3><input class="f" placeholder="اسم المنتج المراد إرجاعه" value="${esc(rt.prod||"")}" oninput="rt.prod=this.value"><select class="f" onchange="rt.reason=this.value">${["تالف","مخالف للطلب","منتهي الصلاحية","أخرى"].map(x=>`<option ${rt.reason==x?"selected":""}>${x}</option>`).join("")}</select><textarea class="f" rows="3" placeholder="تفاصيل إضافية" oninput="rt.note=this.value">${esc(rt.note||"")}</textarea>${pickBtns("pickRt")}${rt.url?`<img src="${rt.url}" alt="" style="max-width:140px;border-radius:12px;margin:6px 0">`:""}<button class="btn" onclick="sendReturn()">إرسال طلب الإرجاع عبر واتساب</button></div>
+  <button class="btn wa" onclick="window.open('https://wa.me/'+S().whatsapp,'_blank')">تواصل معنا عبر واتساب</button></div>`;
+}
+
+/* ---------- الإدارة (للمالك فقط) ---------- */
+async function publishNow(){
+  try{
+    const a=await claude.use("artifact");if(!a){toast("النشر غير متاح هنا");return false}
+    const c=document.documentElement.cloneNode(true);
+    c.querySelector("#app").innerHTML="";c.querySelector("#nav").innerHTML="";c.querySelector("#ts").className="toast";c.querySelector("#ts").textContent="";
+    c.querySelector("#data").textContent=JSON.stringify(D).replace(/</g,"\\u003c");
+    toast("جارٍ الحفظ والنشر...");await a.publish("<!DOCTYPE html>\n"+c.outerHTML);return true;
+  }catch(e){toast(e&&(e.code=="not_writer"||e.code=="not_granted")?"لا تملك صلاحية التعديل":"تعذر الحفظ، حاول مرة أخرى");return false}
+}
+function adm(){
+  if(!admin)return "";
+  if(editId!==null)return prodForm();
+  return `<div class="pg"><h1>⚙️ الإدارة</h1><div class="chips" style="padding:0 0 8px"><button class="chip ${av=="p"?"on":""}" onclick="av='p';ed=null;render()">المنتجات</button><button class="chip ${av=="s"?"on":""}" onclick="av='s';initEd();render()">الإعدادات</button></div>${av=="p"?prodList():setForm()}</div>`;
+}
+function prodList(){
+  return `<button class="btn" onclick="editId='new';tmpImg='';render()">➕ إضافة منتج</button><div style="height:10px"></div>`+
+  D.products.map(p=>`<div class="row" ${p.hide?'style="opacity:.5"':""}><div class="e">${thumb(p)}</div><div class="i"><div>${esc(p.n)}</div><div class="sub">${fm(p.p)} ${cur()} • ${esc(p.c)}${p.s?" / "+esc(p.s):""}${p.hide?" • مخفي":""}</div></div><button class="ic" onclick="editId=${p.id};tmpImg=P(${p.id}).img||'';render()">✏️</button><button class="ic" onclick="togHide(${p.id})">${p.hide?"👁":"🙈"}</button><button class="ic" onclick="delP(${p.id})">🗑</button></div>`).join("")||'<div class="empty">لا توجد منتجات</div>';
+}
+function prodForm(){
+  const p=editId=="new"?{}:P(editId);
+  return `<div class="pg"><h1>${editId=="new"?"منتج جديد":"تعديل المنتج"}</h1>
+  <label class="lbl">اسم المنتج</label><input class="f" id="f_n" value="${esc(p.n||"")}">
+  <label class="lbl">السعر (${cur()})</label><input class="f" id="f_p" inputmode="numeric" value="${p.p||""}">
+  <label class="lbl">القسم</label><select class="f" id="f_c">${D.cats.map(c=>`<option ${p.c==c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+  <label class="lbl">القسم الفرعي (اختياري)</label><input class="f" id="f_s" list="sl" value="${esc(p.s||"")}"><datalist id="sl">${[...new Set(Object.values(D.subs).flat())].map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+  <label class="lbl">رمز تعبيري (يظهر إن لم تضع صورة)</label><input class="f" id="f_e" value="${esc(p.e||"")}">
+  <label class="lbl">صورة المنتج</label><input type="file" accept="image/*" class="f" onchange="pickImg(this)"><img id="pv" ${tmpImg?`src="${tmpImg}" style="display:block"`:""} alt="">
+  <button class="btn" onclick="saveProd()">حفظ ونشر</button><button class="btn gr" onclick="editId=null;render()">إلغاء</button></div>`;
+}
+function pickImg(inp){const f=inp.files[0];if(f)shrink(f,480,u=>{tmpImg=u;$("pv").src=u;$("pv").style.display="block"})}
+async function saveProd(){
+  const n=$("f_n").value.trim(),pr=+$("f_p").value;if(!n||!pr)return toast("أدخل الاسم والسعر");
+  const o={n,p:pr,c:$("f_c").value,s:$("f_s").value.trim()||undefined,e:$("f_e").value.trim()||"🛍️",img:tmpImg||undefined};
+  if(editId=="new"){o.id=Math.max(0,...D.products.map(x=>x.id))+1;D.products.push(o)}
+  else{const i=D.products.findIndex(x=>x.id==editId);o.id=D.products[i].id;if(D.products[i].hide)o.hide=true;D.products[i]=o}
+  if(o.s&&!(D.subs[o.c]||[]).includes(o.s))(D.subs[o.c]=D.subs[o.c]||[]).push(o.s);
+  await publishNow();
+}
+async function togHide(id){const p=P(id);p.hide=!p.hide;await publishNow()}
+async function delP(id){if(delId!=id){delId=id;return toast("اضغط 🗑 مرة أخرى لتأكيد الحذف")}delId=null;D.products=D.products.filter(p=>p.id!=id);await publishNow()}
+function initEd(){ed=JSON.parse(JSON.stringify(S()));ed.catsText=D.cats.join("\n");ed.subsText=Object.entries(D.subs).map(([k,v])=>k+"|"+v.join(",")).join("\n")}
+const fi=(k,l,x)=>`<label class="lbl">${l}</label><input class="f" ${x||""} value="${esc(ed[k]??"")}" oninput="ed.${k}=this.value">`;
+const rows=(k,fs,add)=>ed[k].map((r,i)=>`<div class="card rw" style="white-space:normal">${fs.map(([f,l,x])=>`<input class="f" ${x||""} placeholder="${l}" value="${esc(r[f]??"")}" oninput="ed.${k}[${i}].${f}=this.value">`).join("")}<button class="ic" onclick="ed.${k}.splice(${i},1);render()">🗑</button></div>`).join("")+`<button class="chip" onclick="ed.${k}.push({});render()">➕ ${add}</button>`;
+function setForm(){
+  if(!ed)initEd();
+  return `<h3 class="st">بيانات المتجر</h3><label class="lbl">الشعار</label>${ed.logo?`<img class="logo" src="${ed.logo}" alt="" style="display:block;margin-bottom:6px">`:""}<input type="file" accept="image/*" class="f" onchange="pickLogo(this)">
+  ${fi("name","اسم المتجر")}${fi("whatsapp","رقم واتساب (بصيغة دولية بدون +)",'inputmode="tel"')}${fi("hours","أوقات العمل")}
+  <h3 class="st">التوصيل</h3>${fi("minOrder","الحد الأدنى للطلب (0 = بدون)",'inputmode="numeric"')}${fi("eta","مدة التوصيل المتوقعة (مثال: خلال ساعتين)")}
+  ${rows("zones",[["n","اسم المنطقة"],["fee","رسوم التوصيل",'inputmode="numeric"'],["agent","اسم المندوب (اختياري)"]],"إضافة منطقة")}
+  <h3 class="st">المحافظ الإلكترونية</h3>${rows("wallets",[["n","اسم المحفظة (مثل: ون كاش)"],["num","رقم المحفظة"],["holder","اسم صاحب الحساب"]],"إضافة محفظة")}
+  <h3 class="st">الحسابات البنكية</h3>${rows("banks",[["n","اسم البنك"],["num","رقم الحساب"],["holder","اسم صاحب الحساب"]],"إضافة حساب بنكي")}
+  <h3 class="st">الإرجاع</h3>${fi("retDays","مدة الإرجاع بعد الاستلام (بالأيام)",'inputmode="numeric"')}<label class="lbl">سياسة الإرجاع</label><textarea class="f" rows="4" oninput="ed.returns=this.value">${esc(ed.returns)}</textarea>
+  <h3 class="st">الأقسام</h3><label class="lbl">الأقسام (سطر لكل قسم)</label><textarea class="f" rows="5" oninput="ed.catsText=this.value">${esc(ed.catsText)}</textarea><label class="lbl">الأقسام الفرعية (سطر لكل قسم: القسم|فرعي1,فرعي2)</label><textarea class="f" rows="4" oninput="ed.subsText=this.value">${esc(ed.subsText)}</textarea>
+  <button class="btn" onclick="saveSet()">حفظ ونشر</button>`;
+}
+async function saveSet(){
+  const e=ed,s=S(),cl=a=>a.filter(r=>(r.n||"").trim()).map(r=>({...r,n:r.n.trim()}));
+  const zones=cl(e.zones).map(z=>({n:z.n,fee:+z.fee||0,agent:(z.agent||"").trim()}));
+  if(!zones.length)return toast("أضف منطقة توصيل واحدة على الأقل");
+  s.name=(e.name||"").trim()||s.name;s.whatsapp=String(e.whatsapp||"").replace(/\D/g,"");s.hours=(e.hours||"").trim();s.eta=(e.eta||"").trim();
+  s.minOrder=+e.minOrder||0;s.retDays=+e.retDays||0;s.returns=(e.returns||"").trim();s.logo=e.logo;s.zones=zones;s.wallets=cl(e.wallets);s.banks=cl(e.banks);
+  D.cats=L(e.catsText);D.subs={};L(e.subsText).forEach(x=>{const a=x.split("|").map(y=>y.trim());if(a[0])D.subs[a[0]]=(a[1]||"").split(",").map(y=>y.trim()).filter(Boolean)});
+  await publishNow();
+}
+
+/* ---------- التنقل ---------- */
+function navV(){
+  const t=[["h","🏠","الرئيسية"],["c","🛒","السلة"],["a","👤","حسابي"],["m","☰","المزيد"]];if(admin)t.push(["x","⚙️","إدارة"]);
+  return `<nav>${t.map(([k,i,l])=>`<button class="${tab==k?"on":""}" onclick="go('${k}')"><span>${i}</span>${l}${k=="c"&&cartN()?`<b class="badge">${cartN()}</b>`:""}</button>`).join("")}</nav>`;
+}
+const go=k=>{tab=k;render();scrollTo(0,0)};
+function render(){$("app").innerHTML=({h:home,c:cartV,a:acct,m:more,x:adm})[tab]();$("nav").innerHTML=navV()}
+render();
+document.title=S().name;
+/* وضع العملاء: بدون إدارة داخل الصفحة */
+</script>
+
+
+</body></html>
