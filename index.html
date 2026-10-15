@@ -319,6 +319,21 @@ function render(){$("app").innerHTML=({h:home,c:cartV,a:acct,m:more,x:adm})[tab]
 render();
 document.title=S().name;
 /* وضع العملاء: بدون إدارة داخل الصفحة */
+/* ---------- البيانات من قاعدة Firebase (احتياطها المدمج أعلاه) ---------- */
+const FBCFG={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
+async function loadRemote(){try{
+  const [A,F]=await Promise.all([import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js"),import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js")]);
+  const db=F.getFirestore(A.initializeApp(FBCFG));
+  const g=async k=>{const s=await F.getDoc(F.doc(db,"store",k));return s.exists()?JSON.parse(s.data().json):null};
+  const [c,s,im]=await Promise.all([g("catalog"),g("settings"),g("images")]);
+  if(!c||!s||!Array.isArray(c.products)||!c.products.length)return;
+  D.products=c.products;D.subs=c.subs||D.subs;D.cats=c.cats||D.cats;D.settings=s;
+  const first={};
+  D.products.forEach(p=>{p.img=undefined;const k=p.g||"#"+p.id;if(!first[k]||(p.o||0)<(first[k].o||0))first[k]=p});
+  if(im)Object.keys(first).forEach(k=>{if(im[k])first[k].img=im[k]});
+  document.title=S().name;render();
+}catch(e){console.warn("remote data unavailable",e)}}
+loadRemote();
 </script>
 
 
