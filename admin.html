@@ -226,6 +226,39 @@ window.addl=a=>{(ST[a]=ST[a]||[]).push(a=="zones"?{n:"",fee:0,agent:""}:{n:"",nu
 const zonesH=()=>listEd("zones","z",[["n","المنطقة"],["fee","رسوم التوصيل",1],["agent","اسم المندوب"]],"+ منطقة","🚚 مناطق التوصيل والمناديب","اسم المندوب لك أنت للتنظيم.");
 const banksH=()=>listEd("banks","b",[["n","البنك"],["num","رقم الحساب"],["holder","اسم صاحب الحساب"]],"+ حساب بنكي","🏦 الحسابات البنكية")+listEd("wallets","w",[["n","المحفظة"],["num","الرقم"],["holder","الاسم"]],"+ محفظة","📱 المحافظ الإلكترونية");
 
+/* ---------- تعديلات جاهزة (JSON) ---------- */
+const patchH=()=>`<div class="box"><h2>📥 تطبيق تعديلات جاهزة</h2><div class="hint">الصق هنا التعديلات اللي أرسلتها لك، ثم اضغط «تطبيق»، ثم 💾 حفظ.</div>
+  <textarea id="pt" rows="9" dir="ltr" style="font-family:monospace;font-size:13px" placeholder='{ ... }'></textarea>
+  <div class="row"><button class="btn" onclick="applyPatch()">تطبيق</button></div><div id="ptm" class="msg" style="white-space:pre-wrap;margin-top:8px"></div></div>`;
+window.applyPatch=()=>{
+  let o;try{o=JSON.parse($("pt").value)}catch(e){$("ptm").textContent="❌ النص ليس صحيحاً، انسخه كاملاً من الرسالة";return}
+  const rep=[];let nid=Math.max(0,...C.products.map(x=>x.id))+1;
+  const find=m=>C.products.find(p=>m.id!=null?p.id==m.id:(m.n?p.n==m.n:(p.g==m.g&&p.u==m.u)));
+  const P=o.products||{};
+  (P.update||[]).forEach(u=>{
+    const p=find(u);if(!p){rep.push("⚠️ ما لقيت: "+(u.g||u.n||u.id)+" "+(u.u||""));return}
+    ["p","old","hide","e","s","c","o"].forEach(k=>{if(k in u){if((k=="old"||k=="hide")&&!u[k])delete p[k];else p[k]=u[k]}});
+    if(u.newu){p.u=u.newu}
+    if(p.g)p.n=p.g+" ("+p.u+")";
+    rep.push("✔ عدّلت: "+p.n);
+  });
+  (P.add||[]).forEach(a=>{
+    const ex=C.products.find(x=>x.g==a.g),u=a.u||"حبة";
+    const n=a.n||(a.g?a.g+" ("+u+")":"");if(!n||!a.p){rep.push("⚠️ ناقص اسم أو سعر");return}
+    if(C.products.some(x=>x.n==n)){rep.push("⚠️ موجود مسبقاً: "+n);return}
+    C.products.push({id:nid++,n,p:+a.p,c:a.c||(ex&&ex.c)||"مواد غذائية",s:a.s??(ex&&ex.s)??"",e:a.e||(ex&&ex.e)||"🛍️",g:a.g,u,o:a.o??0});
+    rep.push("➕ أضفت: "+n);
+  });
+  (P.remove||[]).forEach(r=>{
+    const before=C.products.length;
+    C.products=C.products.filter(p=>!(r.id!=null?p.id==r.id:r.n?p.n==r.n:(r.u?(p.g==r.g&&p.u==r.u):(p.g==r.g||p.n==r.g))));
+    rep.push(before>C.products.length?"🗑 حذفت: "+(r.n||r.g||r.id)+" ("+(before-C.products.length)+")":"⚠️ ما لقيت للحذف: "+(r.n||r.g||r.id));
+  });
+  if(o.subs)Object.entries(o.subs).forEach(([c,l])=>{C.subs=C.subs||{};C.subs[c]=[...new Set([...(C.subs[c]||[]),...l])]; rep.push("📁 أقسام: "+l.join("، "))});
+  if(o.settings){Object.assign(ST,o.settings);rep.push("⚙️ عدّلت الإعدادات: "+Object.keys(o.settings).join("، "))}
+  if(!rep.length)rep.push("لا يوجد شيء لتطبيقه");
+  touch();$("ptm").textContent=rep.join("\n")+"\n\nالآن اضغط 💾 حفظ.";
+};
 /* ---------- الواجهة ---------- */
 window.go=t=>{tab=t;render()};
 function bar(){
@@ -245,9 +278,9 @@ function render(){
     return;
   }
   if(!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}</div>`;return}
-  const tabs=[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"]];
+  const tabs=[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"]];
   a.innerHTML=top+`<div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${tab==k?"on":""}" onclick="go('${k}')">${l}</button>`).join("")}</div>`+
-    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():banksH())+`<div class="bar" id="bar"></div>`;
+    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():banksH())+`<div class="bar" id="bar"></div>`;
   bar();
   if(tab=="p")npc();
 }
