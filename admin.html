@@ -204,13 +204,27 @@ window.setst=(k,v,num)=>{ST[k]=num?+v:v;touch()};
 function setH(){
   const bn=ST.banners||[];
   return `<div class="box"><h2>🏪 بيانات المتجر</h2>${fld("اسم المتجر","name")}${fld("رقم الواتساب (بالصيغة الدولية)","whatsapp")}${fld("أوقات العمل","hours")}${fld("مدة التوصيل","eta")}${fld("الحد الأدنى للطلب","minOrder","num")}${fld("مدة الإرجاع (أيام)","retDays","num")}${fld("سياسة الإرجاع","returns","area")}</div>
-  <div class="box"><h2>🎞️ البنرات المتحركة</h2><div class="hint">لو تركتها فاضية يظهر البنر الافتراضي.</div>
-  ${bn.map((b,i)=>`<div class="box" style="margin:8px 0"><input value="${esc(b.t)}" placeholder="العنوان" onchange="setbn(${i},'t',this.value)">
+  <div class="box"><h2>🎞️ البنرات المتحركة</h2><div class="hint">لو تركتها فاضية يظهر البنر الافتراضي. الصورة تُقصّ تلقائياً بنسبة عريضة، فاختر صورة أفقية.</div>
+  ${bn.map((b,i)=>`<div class="box" style="margin:8px 0"><div class="row"><div class="th" style="width:96px;flex:0 0 96px;height:46px;font-size:13px">${b.img?`<img src="${b.img}" style="object-fit:cover">`:"🖼️ صورة"}<input type="file" accept="image/*" onchange="bnimg(${i},this)"></div>${b.img?`<button class="btn d sm" onclick="rmbnimg(${i})">إزالة الصورة</button>`:""}<input value="${esc(b.q||"")}" placeholder="كلمة بحث عند الضغط (اختياري)" onchange="setbn(${i},'q',this.value)"></div>
+   <input style="margin-top:6px" value="${esc(b.t)}" placeholder="العنوان (اختياري مع الصورة)" onchange="setbn(${i},'t',this.value)">
    <div class="row"><input value="${esc(b.s||"")}" placeholder="النص الصغير" onchange="setbn(${i},'s',this.value)"><input class="sm" style="width:70px" value="${esc(b.e||"")}" placeholder="🏷️" onchange="setbn(${i},'e',this.value)"></div>
    <div class="row"><select onchange="setbn(${i},'c',this.value)">${colors.map(([n,v])=>`<option value="${v}" ${v==b.c?"selected":""}>${n}</option>`).join("")}</select><button class="btn d sm" onclick="delbn(${i})">حذف</button></div></div>`).join("")}
   <div class="row"><button class="btn s sm" onclick="addbn()">+ بنر</button></div></div>`;
 }
 window.setbn=(i,k,v)=>{ST.banners[i][k]=v;touch()};
+window.bnimg=(i,inp)=>{
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{
+    const W=720,H=266,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+    x.fillStyle="#fff";x.fillRect(0,0,W,H);
+    const sc=Math.max(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;
+    x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+    ST.banners[i].img=cv.toDataURL("image/jpeg",.78);touch();render();
+  };im.onerror=()=>alert("تعذّر قراءة الصورة");im.src=r.result};
+  r.readAsDataURL(f);
+};
+window.rmbnimg=i=>{delete ST.banners[i].img;touch();render()};
 window.addbn=()=>{(ST.banners=ST.banners||[]).push({t:"عرض جديد",s:"",c:colors[1][1],e:"🔥"});touch();render()};
 window.delbn=i=>{ST.banners.splice(i,1);touch();render()};
 
@@ -262,8 +276,9 @@ window.applyPatch=()=>{
 /* ---------- الواجهة ---------- */
 window.go=t=>{tab=t;render()};
 function bar(){
-  const b=$("bar");if(!b)return;
-  b.innerHTML=`<span class="msg">${esc(msg)||(dirty?"⚠️ عندك تعديلات غير محفوظة":"")}</span><button class="btn" ${busy||!dirty?"disabled":""} onclick="save()">💾 حفظ</button>`;
+  const m=$("bm"),s=$("bs");if(!m||!s)return;
+  m.textContent=msg||(dirty?"⚠️ عندك تعديلات غير محفوظة":"");
+  s.disabled=busy||!dirty;
 }
 window.save=save;
 function render(){
@@ -280,7 +295,7 @@ function render(){
   if(!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}</div>`;return}
   const tabs=[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"]];
   a.innerHTML=top+`<div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${tab==k?"on":""}" onclick="go('${k}')">${l}</button>`).join("")}</div>`+
-    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():banksH())+`<div class="bar" id="bar"></div>`;
+    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():banksH())+`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`;
   bar();
   if(tab=="p")npc();
 }
