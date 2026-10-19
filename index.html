@@ -3,6 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>أسواق الريشي</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f7b5f">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الريشي"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f4ef;--card:#fff;--tx:#1d1d1b;--mu:#76736b;--pr:#0f7b5f;--pr2:#e3f3ee;--bd:#e8e4da;--bl:#2a1fa0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
@@ -106,6 +111,10 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .bn.bi{justify-content:flex-end;cursor:pointer}
 .bn.bt:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6),transparent 65%)}
 .bn.bi h2,.bn.bi p{z-index:1;text-shadow:0 1px 6px rgba(0,0,0,.7);max-width:92%}
+.inst{margin:10px 16px 0;padding:10px 12px;background:var(--card);border:1px solid var(--bd);border-radius:16px;display:flex;gap:8px;align-items:center;font-size:13.5px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.inst span{flex:1;line-height:1.55}
+.ib{background:var(--pr);color:#fff;border:0;border-radius:12px;padding:8px 14px;font-weight:700;font-family:inherit}
+.ix{background:transparent;border:0;color:var(--mu);font-size:18px;padding:2px 6px}
 @media(prefers-reduced-motion:reduce){.bn,.bn:before,.bn .ic,.off{animation:none;transition:none}}
 </style>
 </head>
@@ -165,7 +174,7 @@ function gridH(){
 function home(){
   const s=S(),ss=cat!="الكل"?(D.subs[cat]||[]):[];
   return `<header class="hd"><div class="brand" id="brd"${q.trim()?' style="display:none"':""}>${s.logo?`<img class="logo" src="${s.logo}" alt="">`:""}<div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.hours||"")}</div>${s.eta?`<div class="pill">🚚 ${esc(s.eta)}</div>`:""}</div></div><input class="search" placeholder="🔍 ابحث عن منتج..." value="${esc(q)}" oninput="q=this.value;$('grid').innerHTML=gridH();$('offs').innerHTML=offsH();$('top').style.display=$('brd').style.display=q.trim()?'none':''"></header>
-  <div id="top"${q.trim()?' style="display:none"':""}>${bnrH()}
+  <div id="top"${q.trim()?' style="display:none"':""}>${instH()}${bnrH()}
   <div class="chips">${["الكل",...D.cats].map((c,i)=>`<button class="chip ${c==cat?"on":""}" onclick="setCat(${i-1})">${CI[c]?CI[c]+" ":""}${esc(c)}</button>`).join("")}</div>
   ${ss.length?`<div class="chips" style="padding-top:0">${["الكل",...ss].map((c,i)=>`<button class="chip sm ${c==sub?"on":""}" onclick="setSub(${i-1})">${esc(c)}</button>`).join("")}</div>`:""}</div>
   <div id="offs">${offsH()}</div><div class="grid" id="grid">${gridH()}</div>`;
@@ -326,6 +335,25 @@ function render(){$("app").innerHTML=({h:home,c:cartV,a:acct,m:more,x:adm})[tab]
 render();
 document.title=S().name;
 /* وضع العملاء: بدون إدارة داخل الصفحة */
+/* ---------- تثبيت المتجر كتطبيق ---------- */
+var dIP=null;
+function isStd(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function instOff(){try{return Date.now()-(+localStorage.getItem("instX")||0)<7*864e5}catch(e){return false}}
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dIP=e;if(tab=="h")render()});
+window.addEventListener("appinstalled",()=>{dIP=null;try{localStorage.setItem("instX",Date.now()+9e12)}catch(e){}render()});
+function instH(){
+  const UA=navigator.userAgent||"",isIOS=/iPhone|iPad|iPod/i.test(UA),inApp=/FBAN|FBAV|Instagram|; wv\)|WhatsApp|Line\/|Snapchat|TikTok/i.test(UA);
+  if(isStd()||instOff())return "";
+  let t="",b="";
+  if(dIP){t="📲 ثبّت متجر أسواق الريشي كتطبيق على جوالك";b='<button class="ib" onclick="instGo()">تثبيت</button>'}
+  else if(inApp){t="📲 لتثبيت المتجر كتطبيق: افتح الرابط في متصفح Chrome (أو Safari) ثم اضغط تثبيت"}
+  else if(isIOS){t="📲 لتثبيت المتجر كتطبيق: اضغط زر المشاركة ⬆️ ثم «إضافة إلى الشاشة الرئيسية»"}
+  else return "";
+  return `<div class="inst"><span>${t}</span>${b}<button class="ix" onclick="instX()" aria-label="إغلاق">✕</button></div>`;
+}
+window.instGo=async()=>{if(!dIP)return;dIP.prompt();try{await dIP.userChoice}catch(e){}dIP=null;render()};
+window.instX=()=>{try{localStorage.setItem("instX",Date.now())}catch(e){}render()};
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 /* ---------- البيانات من قاعدة Firebase (احتياطها المدمج أعلاه) ---------- */
 const FBCFG={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
 async function loadRemote(){try{
