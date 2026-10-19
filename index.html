@@ -221,9 +221,19 @@ function order(){
   const sb=subtotal();if(s.minOrder&&sb<s.minOrder)return toast("الحد الأدنى للطلب "+fm(s.minOrder)+" "+s.cur);
   if(py.length&&!rcpt&&!co.noRc){co.noRc=true;return toast("لم تُرفق صورة السند. اضغط إرسال مرة أخرى للمتابعة بدونها")}
   const z=s.zones[co.zone],tot=sb+ +z.fee;
-  const lines=e.map(([id,n])=>{const p=P(id);return `• ${nm(p)} × ${n} = ${fm(p.p*n)}`}).join("\n");
-  const msg=`طلب جديد من ${s.name}\n\n${lines}\n\nالمنتجات: ${fm(sb)} ${s.cur}\nالتوصيل (${z.n}): ${fm(z.fee)} ${s.cur}\nالإجمالي: ${fm(tot)} ${s.cur}\n\nالاسم: ${prof.name}\nالجوال: ${prof.phone}\nالعنوان: ${prof.addr}\n${z.agent?"المندوب: "+z.agent+"\n":""}الدفع: ${py.length?py[co.pay].t+(rcpt?"\n(مرفق صورة السند)":"\n(سأرسل صورة السند لاحقاً)"):"—"}`;
-  sendWa(msg,py.length?rcpt:null,()=>{orders.unshift({d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
+  const now=new Date(),pd=n=>String(n).padStart(2,"0");
+  const no="RS-"+pd(now.getMonth()+1)+pd(now.getDate())+"-"+Math.floor(now.getTime()/1000).toString(36).slice(-4).toUpperCase();
+  const dt=pd(now.getDate())+"/"+pd(now.getMonth()+1)+"/"+now.getFullYear()+"  "+pd(now.getHours())+":"+pd(now.getMinutes());
+  const bar="━━━━━━━━━━━━━━━━━━",sep="──────────────────";
+  const cnt=e.reduce((a,[id,n])=>a+ +n,0);
+  const lines=e.map(([id,n],i)=>{const p=P(id);return `${i+1}) ${nm(p)}\n     ${n} × ${fm(p.p)} = *${fm(p.p*n)}*`}).join("\n");
+  const msg=[bar,"🧾 *فاتورة طلب — "+s.name+"*",bar,"*رقم الطلب:* "+no,"*التاريخ:* "+dt,"",
+    "👤 *بيانات العميل*","الاسم: "+prof.name,"الجوال: "+prof.phone,"المنطقة: "+z.n,"العنوان: "+prof.addr,...(z.agent?["المندوب: "+z.agent]:[]),"",
+    "🛒 *الأصناف ("+e.length+" صنف / "+cnt+" وحدة)*",sep,lines,sep,
+    "المنتجات: "+fm(sb)+" "+s.cur,"التوصيل ("+z.n+"): "+fm(z.fee)+" "+s.cur,"*الإجمالي: "+fm(tot)+" "+s.cur+"*",sep,
+    ...(py.length?["💳 *طريقة الدفع:* "+py[co.pay].t+(rcpt?" (مرفق صورة السند ✅)":" (سأرسل صورة السند لاحقاً)")]:[]),"",
+    "شكراً لتسوقكم من "+s.name+" 🌿",bar].join("\n");
+  sendWa(msg,py.length?rcpt:null,()=>{orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
 }
 function sendReturn(){
   if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
@@ -247,7 +257,7 @@ function acct(){
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
   <label class="lbl">العنوان</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">
   <h1 style="margin-top:18px">طلباتي السابقة</h1>
-  ${orders.length?orders.map((o,oi)=>{const rr=o.ret||[],rs=rr.reduce((a,x)=>a+x.amt,0);return `<div class="card" style="white-space:normal"><div class="tl"><span>${esc(o.d)} — ${o.n} منتج</span><b class="pp">${fm(o.t)} ${cur()}</b></div>${(o.items||[]).map((it,ii)=>`<div class="tl"><span>${esc(it.n)} × ${it.q}</span><button class="chip" onclick="startRet(${oi},${ii})">↩ إرجاع</button></div>`).join("")}${rr.map(x=>`<div class="tl" style="color:#c0392b"><span>↩ مرتجع: ${esc(x.n)} × ${x.q} (${x.st})</span><b>-${fm(x.amt)}</b></div>`).join("")}${rs?`<div class="tl b"><span>الصافي بعد المرتجع</span><b class="pp">${fm(o.t-rs)} ${cur()}</b></div>`:""}</div>`}).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
+  ${orders.length?orders.map((o,oi)=>{const rr=o.ret||[],rs=rr.reduce((a,x)=>a+x.amt,0);return `<div class="card" style="white-space:normal"><div class="tl"><span>${o.no?`<b>${esc(o.no)}</b> • `:""}${esc(o.d)} — ${o.n} منتج</span><b class="pp">${fm(o.t)} ${cur()}</b></div>${(o.items||[]).map((it,ii)=>`<div class="tl"><span>${esc(it.n)} × ${it.q}</span><button class="chip" onclick="startRet(${oi},${ii})">↩ إرجاع</button></div>`).join("")}${rr.map(x=>`<div class="tl" style="color:#c0392b"><span>↩ مرتجع: ${esc(x.n)} × ${x.q} (${x.st})</span><b>-${fm(x.amt)}</b></div>`).join("")}${rs?`<div class="tl b"><span>الصافي بعد المرتجع</span><b class="pp">${fm(o.t-rs)} ${cur()}</b></div>`:""}</div>`}).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
 }
 function more(){
   const s=S(),py=pays();
