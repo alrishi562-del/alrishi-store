@@ -239,7 +239,14 @@ function sendReturn(){
   if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
   if(!(rt.prod||"").trim())return toast("اكتب اسم المنتج المراد إرجاعه");
   if(rt.oi!=null&&maxRet()<1)return toast("تم طلب إرجاع كامل كمية هذا المنتج");
-  const msg=`طلب إرجاع — ${S().name}\n\nالاسم: ${prof.name}\nالجوال: ${prof.phone}\nالمنتج: ${rt.prod}${rt.oi!=null?" × "+(rt.q||1):""}\nالسبب: ${rt.reason}\n${rt.note?"التفاصيل: "+rt.note+"\n":""}${rt.file?"(مرفق صورة المنتج)":""}`;
+  const now=new Date(),pd=n=>String(n).padStart(2,"0"),bar="━━━━━━━━━━━━━━━━━━";
+  const no="RT-"+pd(now.getMonth()+1)+pd(now.getDate())+"-"+Math.floor(now.getTime()/1000).toString(36).slice(-4).toUpperCase();
+  const dt=pd(now.getDate())+"/"+pd(now.getMonth()+1)+"/"+now.getFullYear()+"  "+pd(now.getHours())+":"+pd(now.getMinutes());
+  const orig=rt.oi!=null&&orders[rt.oi]&&orders[rt.oi].no?orders[rt.oi].no:"";
+  const msg=[bar,"↩️ *طلب إرجاع — "+S().name+"*",bar,"*رقم الإرجاع:* "+no,...(orig?["*الطلب الأصلي:* "+orig]:[]),"*التاريخ:* "+dt,"",
+    "👤 *بيانات العميل*","الاسم: "+prof.name,"الجوال: "+prof.phone,"",
+    "📦 *المنتج المرتجع*","الصنف: "+rt.prod+(rt.oi!=null?" × "+(rt.q||1):""),"السبب: "+rt.reason,...(rt.note?["التفاصيل: "+rt.note]:[]),...(rt.file?["(مرفق صورة المنتج ✅)"]:[]),"",
+    "سنراجع طلبك ونتواصل معك 🌿",bar].join("\n");
   sendWa(msg,rt.file||null,()=>{regRet();rt={reason:"تالف"};render()});
 }
 
