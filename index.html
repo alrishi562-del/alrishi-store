@@ -233,7 +233,7 @@ function order(){
     "المنتجات: "+fm(sb)+" "+s.cur,"التوصيل ("+z.n+"): "+fm(z.fee)+" "+s.cur,"*الإجمالي: "+fm(tot)+" "+s.cur+"*",sep,
     ...(py.length?["💳 *طريقة الدفع:* "+py[co.pay].t+(rcpt?" (مرفق صورة السند ✅)":" (سأرسل صورة السند لاحقاً)")]:[]),"",
     "شكراً لتسوقكم من "+s.name+" 🌿",bar].join("\n");
-  sendWa(msg,py.length?rcpt:null,()=>{orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
+  sendWa(msg,py.length?rcpt:null,()=>{logFb("orders",no,{no:no,name:prof.name,phone:prof.phone,addr:prof.addr,zone:z.n,agent:z.agent||"",items:e.map(([id,q])=>{const p=P(id);return {n:nm(p),q:+q,p:+p.p}}),sub:sb,fee:+z.fee,total:tot,pay:py.length?py[co.pay].t:"",rc:!!rcpt,t:Date.now(),st:"new"});orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
 }
 function sendReturn(){
   if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
@@ -247,7 +247,7 @@ function sendReturn(){
     "👤 *بيانات العميل*","الاسم: "+prof.name,"الجوال: "+prof.phone,"",
     "📦 *المنتج المرتجع*","الصنف: "+rt.prod+(rt.oi!=null?" × "+(rt.q||1):""),"السبب: "+rt.reason,...(rt.note?["التفاصيل: "+rt.note]:[]),...(rt.file?["(مرفق صورة المنتج ✅)"]:[]),"",
     "سنراجع طلبك ونتواصل معك 🌿",bar].join("\n");
-  sendWa(msg,rt.file||null,()=>{regRet();rt={reason:"تالف"};render()});
+  sendWa(msg,rt.file||null,()=>{logFb("returns",no,{no:no,orig:orig,name:prof.name,phone:prof.phone,prod:rt.prod,q:+(rt.q||1),reason:rt.reason||"",note:rt.note||"",t:Date.now(),st:"new"});regRet();rt={reason:"تالف"};render()});
 }
 
 function maxRet(){const o=orders[rt.oi],it=o&&o.items&&o.items[rt.ii];if(!it)return 1;const done=(o.ret||[]).filter(x=>x.n==it.n).reduce((a,x)=>a+x.q,0);return Math.max(0,it.q-done)}
@@ -373,9 +373,11 @@ window.instX=()=>{try{localStorage.setItem("instX",Date.now())}catch(e){}render(
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 /* ---------- البيانات من قاعدة Firebase (احتياطها المدمج أعلاه) ---------- */
 const FBCFG={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
+let FBX=null;
+const fbInit=()=>FBX||(FBX=(async()=>{const [A,F]=await Promise.all([import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js"),import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js")]);return {F,db:F.getFirestore(A.initializeApp(FBCFG))}})());
+const logFb=(col,id,data)=>{fbInit().then(({F,db})=>F.setDoc(F.doc(db,col,id),data)).catch(e=>console.warn("log failed",e))};
 async function loadRemote(){try{
-  const [A,F]=await Promise.all([import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js"),import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js")]);
-  const db=F.getFirestore(A.initializeApp(FBCFG));
+  const {F,db}=await fbInit();
   const g=async k=>{const s=await F.getDoc(F.doc(db,"store",k));return s.exists()?JSON.parse(s.data().json):null};
   const [c,s,im]=await Promise.all([g("catalog"),g("settings"),g("images")]);
   if(!c||!s||!Array.isArray(c.products)||!c.products.length)return;
