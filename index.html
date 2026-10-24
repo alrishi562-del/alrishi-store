@@ -115,6 +115,7 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .inst span{flex:1;line-height:1.55}
 .ib{background:var(--pr);color:#fff;border:0;border-radius:12px;padding:8px 14px;font-weight:700;font-family:inherit}
 .ix{background:transparent;border:0;color:var(--mu);font-size:18px;padding:2px 6px}
+.lb{background:var(--pr);color:#fff;border:0;border-radius:12px;padding:11px 14px;font-weight:700;font-family:inherit;width:100%;margin-top:6px;font-size:15px}.lok{color:var(--pr);font-size:13px;margin-top:6px;line-height:1.6}.lok a{color:var(--pr)}.lerr{color:#c92a2a;font-size:13px;margin-top:6px;line-height:1.6}
 @media(prefers-reduced-motion:reduce){.bn,.bn:before,.bn .ic,.off{animation:none;transition:none}}
 </style>
 </head>
@@ -194,7 +195,7 @@ function cartV(){
   <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
   <label class="lbl">منطقة التوصيل</label><select class="f" onchange="co.zone=+this.value;render()"><option value="-1">اختر المنطقة</option>${s.zones.map((x,i)=>`<option value="${i}" ${co.zone==i?"selected":""}>${esc(x.n)} — ${fm(x.fee)} ${cur()}</option>`).join("")}</select>
-  ${s.eta?`<div class="sub">مدة التوصيل: ${esc(s.eta)}</div>`:""}<label class="lbl">العنوان التفصيلي</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">
+  ${s.eta?`<div class="sub">مدة التوصيل: ${esc(s.eta)}</div>`:""}<label class="lbl">العنوان التفصيلي</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">${locBlock()}
   ${py.length?`<label class="lbl">طريقة الدفع</label><select class="f" onchange="co.pay=+this.value;render()"><option value="-1">اختر طريقة الدفع</option>${py.map((x,i)=>`<option value="${i}" ${co.pay==i?"selected":""}>${esc(x.t)}</option>`).join("")}</select>${co.pay>=0?`<div class="box">حوّل المبلغ إلى:<br><b>${esc(py[co.pay].d)}</b><br>ثم صوّر سند الحوالة وأرفقه هنا:</div>${rcBlock()}`:""}`:""}
   <div class="tl"><span>المنتجات</span><span>${fm(sb)} ${cur()}</span></div>
   <div class="tl"><span>التوصيل${z?" ("+esc(z.n)+")":""}</span><span>${z?fm(fee)+" "+cur():"—"}</span></div>
@@ -213,9 +214,28 @@ function sendWa(msg,file,ok){
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){toast("اختر واتساب ثم محادثة المتجر "+S().whatsapp);navigator.share({files:[file],text:msg}).then(ok).catch(e=>{if(!e||e.name!="AbortError")wa()})}
   else{wa();if(file)toast("أرفق صورة السند داخل محادثة واتساب")}
 }
+let locErr="";
+const locUrl=()=>prof.loc?`https://maps.google.com/?q=${prof.loc.lat},${prof.loc.lng}`:(/^https?:\/\/\S{6,}$/i.test((prof.locLink||"").trim())?prof.locLink.trim().slice(0,200):"");
+window.getLoc=()=>{
+  if(!navigator.geolocation){locErr="المتصفح لا يدعم تحديد الموقع. الصق رابط موقعك من خرائط جوجل.";render();return}
+  locErr="";toast("جاري تحديد موقعك…");
+  navigator.geolocation.getCurrentPosition(p=>{prof.loc={lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0),t:Date.now()};LS.s("prof",prof);locErr="";render()},
+    e=>{locErr=e&&e.code==1?"ما سمحت بالوصول للموقع. فعّل إذن الموقع للمتصفح، أو الصق رابط موقعك من خرائط جوجل.":"تعذّر تحديد الموقع. جرّب في مكان مكشوف، أو الصق رابط موقعك من خرائط جوجل.";render()},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+};
+window.clrLoc=()=>{delete prof.loc;LS.s("prof",prof);render()};
+const locBlock=()=>{
+  const lu=locUrl(),need=S().reqLoc!==false;
+  return `<label class="lbl">📍 موقعك على الخريطة${need?" (مطلوب لتوصيل الطلب)":""}</label>
+  ${prof.loc?`<div class="lok">✅ تم تحديد موقعك${prof.loc.acc?" (دقة ≈ "+prof.loc.acc+" م)":""} — <a href="${esc(lu)}" target="_blank" rel="noopener">عرض على الخريطة</a> · <a href="#" onclick="clrLoc();return false">حذف</a></div>`:""}
+  <button class="lb" onclick="getLoc()">📍 ${prof.loc?"تحديث موقعي":"تحديد موقعي الحالي"}</button>
+  ${locErr?`<div class="lerr">${esc(locErr)}</div>`:""}
+  <input class="f" style="margin-top:8px" placeholder="أو الصق رابط موقعك من خرائط جوجل" value="${esc(prof.locLink||"")}" oninput="prof.locLink=this.value;LS.s('prof',prof)">`;
+};
 function order(){
   const e=Object.entries(cart).filter(([id])=>P(id)),s=S(),py=pays();
   if(!prof.name||!prof.phone||!prof.addr)return toast("أكمل الاسم والجوال والعنوان");
+  if(s.reqLoc!==false&&!locUrl())return toast("حدّد موقعك بزر 📍 أو الصق رابط الموقع، لازم لتوصيل طلبك");
   if(co.zone<0)return toast("اختر منطقة التوصيل");
   if(py.length&&co.pay<0)return toast("اختر طريقة الدفع");
   const sb=subtotal();if(s.minOrder&&sb<s.minOrder)return toast("الحد الأدنى للطلب "+fm(s.minOrder)+" "+s.cur);
@@ -228,12 +248,12 @@ function order(){
   const cnt=e.reduce((a,[id,n])=>a+ +n,0);
   const lines=e.map(([id,n],i)=>{const p=P(id);return `${i+1}) ${nm(p)}\n     ${n} × ${fm(p.p)} = *${fm(p.p*n)}*`}).join("\n");
   const msg=[bar,"🧾 *فاتورة طلب — "+s.name+"*",bar,"*رقم الطلب:* "+no,"*التاريخ:* "+dt,"",
-    "👤 *بيانات العميل*","الاسم: "+prof.name,"الجوال: "+prof.phone,"المنطقة: "+z.n,"العنوان: "+prof.addr,...(z.agent?["المندوب: "+z.agent]:[]),"",
+    "👤 *بيانات العميل*","الاسم: "+prof.name,"الجوال: "+prof.phone,"المنطقة: "+z.n,"العنوان: "+prof.addr,...(locUrl()?["📍 الموقع: "+locUrl()]:[]),...(z.agent?["المندوب: "+z.agent]:[]),"",
     "🛒 *الأصناف ("+e.length+" صنف / "+cnt+" وحدة)*",sep,lines,sep,
     "المنتجات: "+fm(sb)+" "+s.cur,"التوصيل ("+z.n+"): "+fm(z.fee)+" "+s.cur,"*الإجمالي: "+fm(tot)+" "+s.cur+"*",sep,
     ...(py.length?["💳 *طريقة الدفع:* "+py[co.pay].t+(rcpt?" (مرفق صورة السند ✅)":" (سأرسل صورة السند لاحقاً)")]:[]),"",
     "شكراً لتسوقكم من "+s.name+" 🌿",bar].join("\n");
-  sendWa(msg,py.length?rcpt:null,()=>{logFb("orders",no,{no:no,name:prof.name,phone:prof.phone,addr:prof.addr,zone:z.n,agent:z.agent||"",items:e.map(([id,q])=>{const p=P(id);return {n:nm(p),q:+q,p:+p.p}}),sub:sb,fee:+z.fee,total:tot,pay:py.length?py[co.pay].t:"",rc:!!rcpt,t:Date.now(),st:"new"});orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
+  sendWa(msg,py.length?rcpt:null,()=>{logFb("orders",no,{no:no,name:prof.name,phone:prof.phone,addr:(String(prof.addr).slice(0,200)+(locUrl()?" | "+locUrl():"")).slice(0,299),zone:z.n,agent:z.agent||"",items:e.map(([id,q])=>{const p=P(id);return {n:nm(p),q:+q,p:+p.p}}),sub:sb,fee:+z.fee,total:tot,pay:py.length?py[co.pay].t:"",rc:!!rcpt,t:Date.now(),st:"new"});orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
 }
 function sendReturn(){
   if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
@@ -262,7 +282,7 @@ function acct(){
   return `<div class="pg"><h1>👤 حسابي</h1><div class="sub" style="margin-bottom:10px">بياناتك تُحفظ على جوالك فقط لتسريع الطلب القادم.</div>
   <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
-  <label class="lbl">العنوان</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">
+  <label class="lbl">العنوان</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">${locBlock()}
   <h1 style="margin-top:18px">طلباتي السابقة</h1>
   ${orders.length?orders.map((o,oi)=>{const rr=o.ret||[],rs=rr.reduce((a,x)=>a+x.amt,0);return `<div class="card" style="white-space:normal"><div class="tl"><span>${o.no?`<b>${esc(o.no)}</b> • `:""}${esc(o.d)} — ${o.n} منتج</span><b class="pp">${fm(o.t)} ${cur()}</b></div>${(o.items||[]).map((it,ii)=>`<div class="tl"><span>${esc(it.n)} × ${it.q}</span><button class="chip" onclick="startRet(${oi},${ii})">↩ إرجاع</button></div>`).join("")}${rr.map(x=>`<div class="tl" style="color:#c0392b"><span>↩ مرتجع: ${esc(x.n)} × ${x.q} (${x.st})</span><b>-${fm(x.amt)}</b></div>`).join("")}${rs?`<div class="tl b"><span>الصافي بعد المرتجع</span><b class="pp">${fm(o.t-rs)} ${cur()}</b></div>`:""}</div>`}).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
 }

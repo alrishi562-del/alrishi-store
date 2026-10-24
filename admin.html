@@ -216,7 +216,7 @@ const fld=(l,k,t)=>`<label>${l}</label>${t=="area"?`<textarea rows="3" onchange=
 window.setst=(k,v,num)=>{ST[k]=num?+v:v;touch()};
 function setH(){
   const bn=ST.banners||[];
-  return `<div class="box"><h2>🏪 بيانات المتجر</h2>${fld("اسم المتجر","name")}${fld("رقم الواتساب (بالصيغة الدولية)","whatsapp")}${fld("أوقات العمل","hours")}${fld("مدة التوصيل","eta")}${fld("الحد الأدنى للطلب","minOrder","num")}${fld("مدة الإرجاع (أيام)","retDays","num")}${fld("سياسة الإرجاع","returns","area")}</div>
+  return `<div class="box"><h2>🏪 بيانات المتجر</h2>${fld("اسم المتجر","name")}${fld("رقم الواتساب (بالصيغة الدولية)","whatsapp")}${fld("أوقات العمل","hours")}${fld("مدة التوصيل","eta")}${fld("الحد الأدنى للطلب","minOrder","num")}${fld("مدة الإرجاع (أيام)","retDays","num")}${fld("سياسة الإرجاع","returns","area")}<label class="chk" style="margin-top:10px;font-size:14px"><input type="checkbox" ${ST.reqLoc!==false?"checked":""} onchange="setst('reqLoc',this.checked)">إلزام الزبون بتحديد موقعه قبل إرسال الطلب</label></div>
   <div class="box"><h2>🎞️ البنرات المتحركة</h2><div class="hint">لو تركتها فاضية يظهر البنر الافتراضي. الصورة تُقصّ تلقائياً بنسبة عريضة، فاختر صورة أفقية.</div>
   ${bn.map((b,i)=>`<div class="box" style="margin:8px 0"><div class="row"><div class="th" style="width:96px;flex:0 0 96px;height:46px;font-size:13px">${b.img?`<img src="${b.img}" style="object-fit:cover">`:"🖼️ صورة"}<input type="file" accept="image/*" onchange="bnimg(${i},this)"></div>${b.img?`<button class="btn d sm" onclick="rmbnimg(${i})">إزالة الصورة</button>`:""}<input value="${esc(b.q||"")}" placeholder="كلمة بحث عند الضغط (اختياري)" onchange="setbn(${i},'q',this.value)"></div>
    <input style="margin-top:6px" value="${esc(b.t)}" placeholder="العنوان (اختياري مع الصورة)" onchange="setbn(${i},'t',this.value)">
@@ -304,7 +304,7 @@ const stSel=(col,id,cur,map)=>`<select class="sm" style="width:auto" onchange="s
 function ordCardH(o){
   return `<div class="box"><div class="row"><b>${esc(o.no)}</b><span class="msg">${fdt(o.t)}</span>${stSel("orders",o.id,o.st,ST_O)}</div>
   <div style="margin-top:6px"><b>${esc(o.name)}</b> • <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
-  <div class="hint">${esc(o.zone)}${o.agent?" • المندوب: "+esc(o.agent):""} • ${esc(o.addr)}</div>
+  <div class="hint">${esc(o.zone)}${o.agent?" • المندوب: "+esc(o.agent):""} • ${esc(String(o.addr||"").replace(/\s*\|\s*https?:\/\/\S+/,""))}</div>${(m=>m?`<div style="margin-top:4px"><a href="${esc(m[0])}" target="_blank" rel="noopener">📍 فتح موقع العميل على الخريطة</a></div>`:`<div class="hint" style="color:var(--rd)">⚠️ لا يوجد موقع على الخريطة</div>`)(String(o.addr||"").match(/https?:\/\/\S+/))}
   <div style="margin-top:6px;font-size:14px">${(o.items||[]).map(i=>`${esc(i.n)} × ${i.q} = ${fm(i.p*i.q)}`).join("<br>")}</div>
   <div class="row" style="margin-top:6px"><b>الإجمالي: ${fm(o.total)}</b><span class="hint">التوصيل ${fm(o.fee)}${o.pay?" • "+esc(o.pay):""}${o.rc?" • السند ✅":""}</span></div>
   <div class="row"><a class="btn s sm" style="text-decoration:none" href="https://wa.me/${wnum(o.phone)}" target="_blank">واتساب العميل</a><button class="btn s sm" onclick="cpInv('${esc(o.id)}')">📋 نسخ الفاتورة</button>${role!="orders"?`<button class="btn d sm" onclick="delOrd('orders','${esc(o.id)}')">حذف</button>`:""}</div></div>`;
@@ -345,7 +345,7 @@ window.delOrd=async(col,id)=>{
 window.cpInv=async id=>{
   const o=ORD.find(x=>x.id==id);if(!o)return;
   const bar="━━━━━━━━━━━━━━━━━━",sep="──────────────────";
-  const t=[bar,"🧾 *فاتورة طلب — "+((ST&&ST.name)||"أسواق الريشي")+"*",bar,"*رقم الطلب:* "+o.no,"*التاريخ:* "+fdt(o.t),"","👤 *بيانات العميل*","الاسم: "+o.name,"الجوال: "+o.phone,"المنطقة: "+o.zone,"العنوان: "+o.addr,"","🛒 *الأصناف*",sep,...(o.items||[]).map((i,k)=>`${k+1}) ${i.n}\n     ${i.q} × ${fm(i.p)} = *${fm(i.p*i.q)}*`),sep,"المنتجات: "+fm(o.sub),"التوصيل: "+fm(o.fee),"*الإجمالي: "+fm(o.total)+"*",sep,"شكراً لتسوقكم 🌿",bar].join("\n");
+  const t=[bar,"🧾 *فاتورة طلب — "+((ST&&ST.name)||"أسواق الريشي")+"*",bar,"*رقم الطلب:* "+o.no,"*التاريخ:* "+fdt(o.t),"","👤 *بيانات العميل*","الاسم: "+o.name,"الجوال: "+o.phone,"المنطقة: "+o.zone,"العنوان: "+String(o.addr||"").replace(/\s*\|\s*https?:\/\/\S+/,""),...((m=>m?["📍 الموقع: "+m[0]]:[])(String(o.addr||"").match(/https?:\/\/\S+/))),"","🛒 *الأصناف*",sep,...(o.items||[]).map((i,k)=>`${k+1}) ${i.n}\n     ${i.q} × ${fm(i.p)} = *${fm(i.p*i.q)}*`),sep,"المنتجات: "+fm(o.sub),"التوصيل: "+fm(o.fee),"*الإجمالي: "+fm(o.total)+"*",sep,"شكراً لتسوقكم 🌿",bar].join("\n");
   try{await navigator.clipboard.writeText(t);alert("تم نسخ الفاتورة ✅")}catch(e){prompt("انسخ الفاتورة:",t)}
 };
 
