@@ -39,6 +39,10 @@ button{font-family:inherit;cursor:pointer}
 .err{color:var(--rd);font-size:14px;margin-top:8px}
 .dim{opacity:.45}
 .hint{font-size:12px;color:var(--mu);margin-top:4px}
+.vc{display:flex;gap:6px;align-items:center;margin:3px 0 8px}
+.vc input{padding:7px;font-size:13px;flex:1;min-width:0}
+.vc .pf{flex:1.4;font-size:12px;color:var(--mu);text-align:center}
+.pf.ok{color:var(--pr);font-weight:700}.pf.bad{color:var(--rd);font-weight:700}
 </style>
 </head>
 <body>
@@ -56,6 +60,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/(^|\s)ارز/g,"$1رز").toLowerCase();
 const fm=n=>Number(n||0).toLocaleString("en-US");
 
+let CO={},coDirty=false,costsOK=true;
 let role="none",ORD=[],RET=[],ofil="all",oq="",ordMsg="",ordLoaded=false,STAFF={managers:[],orders:[]};
 const OWNER="alrishi562@gmail.com";
 let U=null,C=null,ST=null,IM={},tab="p",q="",dirty=false,msg="",err="",busy=false,needSeed=false;
@@ -66,6 +71,8 @@ async function load(){
   if(!c.exists()||!s.exists()){needSeed=true;C=null;return}
   C=JSON.parse(c.data().json);ST=JSON.parse(s.data().json);IM=i.exists()?JSON.parse(i.data().json):{};
   needSeed=false;
+  try{const c=await getDoc(doc(db,"private","costs"));CO=c.exists()?JSON.parse(c.data().json):{};costsOK=true}catch(e){CO={};costsOK=false}
+  coDirty=false;
 }
 async function save(){
   busy=true;msg="جاري الحفظ…";bar();
@@ -76,6 +83,10 @@ async function save(){
       setDoc(R("images"),{json:JSON.stringify(IM),t:Date.now()})]);
     dirty=false;msg="تم الحفظ ✅ وظهر عند الزبائن";
   }catch(e){msg="تعذّر الحفظ: "+(e.code||e.message)}
+  if(coDirty){
+    try{await setDoc(doc(db,"private","costs"),{json:JSON.stringify(CO),t:Date.now()});coDirty=false;costsOK=true}
+    catch(e){costsOK=false;msg+=" — لكن تعذّر حفظ أسعار الشراء ("+(e.code||e.message)+"): حدّث قواعد Firebase"}
+  }
   busy=false;bar();
 }
 window.seed=async()=>{
@@ -146,7 +157,7 @@ function listH(){
         <input type="number" inputmode="numeric" value="${p.p}" onchange="setv(${p.id},'p',+this.value)">
         <input type="number" inputmode="numeric" value="${p.old||""}" placeholder="قبل الخصم" onchange="setv(${p.id},'old',+this.value||0)">
         <div><label class="chk"><input type="checkbox" ${p.hide?"checked":""} onchange="setv(${p.id},'hide',this.checked)">مخفي</label>
-        <button class="btn d" onclick="delv(${p.id})">حذف</button></div></div>`).join("")}
+        <button class="btn d" onclick="delv(${p.id})">حذف</button></div></div><div class="vc"><input type="number" inputmode="numeric" placeholder="سعر الشراء" value="${CO[p.id]||""}" onchange="setcost(${p.id},+this.value)"><span class="pf ${pfCls(p)}" id="pf${p.id}">${pfTxt(p)}</span><input type="number" inputmode="decimal" placeholder="ربح %" onchange="setmk(${p.id},+this.value);this.value=''"></div>`).join("")}
       <div class="row"><button class="btn s sm" onclick="addv('${esc(g.k)}')">+ إضافة وحدة</button></div></div>`}).join("");
 }
 function prodH(){
@@ -160,6 +171,13 @@ function prodH(){
     <div class="row"><button class="btn" onclick="addp()">إضافة</button></div></div>
     <div id="list">${listH()}</div>`;
 }
+const pfTxt=p=>{const c=+CO[p.id];if(!c)return "أدخل سعر الشراء";const d=p.p-c,pc=Math.round(d/c*1000)/10;return (d>=0?"ربح ":"خسارة ")+fm(Math.abs(d))+" ("+pc+"%)"};
+const pfCls=p=>{const c=+CO[p.id];return !c?"":p.p>=c?"ok":"bad"};
+const pfUpd=id=>{const p=C.products.find(x=>x.id==id),e=$("pf"+id);if(p&&e){e.textContent=pfTxt(p);e.className="pf "+pfCls(p)}};
+window.setcost=(id,v)=>{if(v>0)CO[id]=v;else delete CO[id];coDirty=true;touch();pfUpd(id)};
+window.setmk=(id,pct)=>{const p=C.products.find(x=>x.id==id),c=+CO[id];
+  if(!p)return;if(!c)return alert("اكتب سعر الشراء أولاً");if(!(pct>-100))return;
+  const raw=c*(1+pct/100),st=raw>=1000?50:25;p.p=Math.ceil(Math.round(raw*1e6)/1e6/st)*st;touch();reList()};
 window.srch=v=>{q=v;$("list").innerHTML=listH()};
 window.npc=()=>{const c=$("np_c").value,sl=(C.subs||{})[c]||[];$("np_s").innerHTML='<option value=""></option>'+sl.map(s=>`<option>${esc(s)}</option>`).join("")};
 const touch=()=>{dirty=true;msg="";bar()};
@@ -170,9 +188,9 @@ window.setv=(id,k,v)=>{
   else if(k=="old"){if(v>0)p.old=v;else delete p.old}
   else if(k=="u"){p.u=v;if(p.g)p.n=p.g+" ("+v+")"}
   else p[k]=v;
-  touch();if(k=="hide"||k=="u")reList();
+  touch();if(k=="p")pfUpd(id);if(k=="hide"||k=="u")reList();
 };
-window.delv=id=>{if(!confirm("حذف هذه الوحدة نهائياً؟"))return;C.products=C.products.filter(x=>x.id!=id);touch();$("list").innerHTML=listH()};
+window.delv=id=>{if(!confirm("حذف هذه الوحدة نهائياً؟"))return;C.products=C.products.filter(x=>x.id!=id);if(CO[id]){delete CO[id];coDirty=true}touch();reList()};
 window.addv=k=>{
   const a=allOf(k),f=a[0],u=prompt("اسم الوحدة (مثلاً: كرتون 24)");if(!u)return;
   const pr=+prompt("السعر");if(!pr)return;
@@ -281,6 +299,8 @@ window.applyPatch=()=>{
     C.products=C.products.filter(p=>!(r.id!=null?p.id==r.id:r.n?p.n==r.n:(r.u?(p.g==r.g&&p.u==r.u):(p.g==r.g||p.n==r.g))));
     rep.push(before>C.products.length?"🗑 حذفت: "+(r.n||r.g||r.id)+" ("+(before-C.products.length)+")":"⚠️ ما لقيت للحذف: "+(r.n||r.g||r.id));
   });
+  (o.costs||[]).forEach(c=>{const p=C.products.find(x=>c.id!=null?x.id==c.id:(c.n?x.n==c.n:(x.g==c.g&&x.u==c.u)));
+    if(p&&c.cost>0){CO[p.id]=c.cost;coDirty=true;rep.push("💰 سعر شراء: "+p.n)}else rep.push("⚠️ ما لقيت للشراء: "+(c.g||c.n||c.id))});
   if(o.subs)Object.entries(o.subs).forEach(([c,l])=>{C.subs=C.subs||{};C.subs[c]=[...new Set([...(C.subs[c]||[]),...l])]; rep.push("📁 أقسام: "+l.join("، "))});
   if(o.settings){Object.assign(ST,o.settings);rep.push("⚙️ عدّلت الإعدادات: "+Object.keys(o.settings).join("، "))}
   if(!rep.length)rep.push("لا يوجد شيء لتطبيقه");
