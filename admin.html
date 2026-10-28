@@ -49,7 +49,7 @@ button{font-family:inherit;cursor:pointer}
 <div id="app"><div class="box">جاري التحميل…</div></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const cfg={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
@@ -60,7 +60,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/(^|\s)ارز/g,"$1رز").toLowerCase();
 const fm=n=>Number(n||0).toLocaleString("en-US");
 
-let CO={},coDirty=false,costsOK=true;
+let CO={},coDirty=false,costsOK=true,authMode="in",info="";
 let role="none",ORD=[],RET=[],ofil="all",oq="",ordMsg="",ordLoaded=false,STAFF={managers:[],orders:[]};
 const OWNER="alrishi562@gmail.com";
 let U=null,C=null,ST=null,IM={},tab="p",q="",dirty=false,msg="",err="",busy=false,needSeed=false;
@@ -103,26 +103,41 @@ window.seed=async()=>{
 };
 
 /* ---------- الدخول ---------- */
-onAuthStateChanged(auth,async u=>{
-  U=u;err="";role="none";ordLoaded=false;ORD=[];RET=[];
-  if(u){
+async function enter(){
+  err="";role="none";ordLoaded=false;ORD=[];RET=[];
+  if(U){
     await detectRole();
     if(role=="owner"||role=="manager"){try{await load()}catch(e){err="تعذّر قراءة البيانات: "+(e.code||e.message)}}
     if(role=="orders")tab="o";
   }
   render();
-  if(u&&role=="orders")loadOrders();
-});
-window.login=async()=>{
-  const em=$("em").value.trim(),pw=$("pw").value;
-  err="";busy=true;render();
-  try{await signInWithEmailAndPassword(auth,em,pw)}
-  catch(e){err="الإيميل أو كلمة المرور غير صحيحة";busy=false;render();return}
-  busy=false;
+  if(U&&role=="orders")loadOrders();
+}
+onAuthStateChanged(auth,async u=>{U=u;if(!u){authMode="in";info=""}await enter()});
+const fbErr=e=>({"auth/email-already-in-use":"هذا الإيميل مسجّل مسبقاً. اضغط «لدي حساب» أو «نسيت كلمة المرور».","auth/weak-password":"كلمة المرور ضعيفة، اجعلها 6 أحرف أو أكثر.","auth/invalid-email":"الإيميل غير صحيح.","auth/too-many-requests":"محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة.","auth/user-not-found":"لا يوجد حساب بهذا الإيميل."}[e&&e.code]||("تعذّر التنفيذ: "+((e&&e.code)||(e&&e.message))));
+window.am=m=>{authMode=m;err="";info="";render()};
+window.authGo=async()=>{
+  const em=$("em").value.trim(),pw=$("pw")?$("pw").value:"";
+  err="";info="";busy=true;render();
+  try{
+    if(authMode=="reset"){await sendPasswordResetEmail(auth,em);info="أرسلنا رابط استعادة كلمة المرور إلى بريدك (تفقد الرسائل غير المرغوبة أيضاً)."}
+    else if(authMode=="up"){
+      if(pw.length<6)err="كلمة المرور 6 أحرف على الأقل.";
+      else{const c=await createUserWithEmailAndPassword(auth,em,pw);try{await sendEmailVerification(c.user)}catch(e){}}
+    }else await signInWithEmailAndPassword(auth,em,pw);
+  }catch(e){err=authMode=="in"?"الإيميل أو كلمة المرور غير صحيحة":fbErr(e)}
+  busy=false;if(!U)render();
+};
+window.login=window.authGo;
+window.resendVer=async()=>{try{await sendEmailVerification(auth.currentUser);info="أعدنا إرسال رابط التأكيد."}catch(e){info=fbErr(e)}render()};
+window.chkVer=async()=>{
+  try{await auth.currentUser.reload();await auth.currentUser.getIdToken(true);U=auth.currentUser}catch(e){info=fbErr(e)}
+  if(U&&(U.emailVerified)){info="";await enter()}else{info="لسا ما تأكد البريد. افتح الرسالة واضغط على الرابط داخلها، ثم ارجع هنا.";render()}
 };
 window.logout=()=>signOut(auth);
 async function detectRole(){
   const em=(U.email||"").toLowerCase();
+  if(em!=OWNER&&!U.emailVerified){role="unverified";return}
   let r={};try{const d=await getDoc(doc(db,"staff","roles"));if(d.exists())r=d.data()}catch(e){}
   STAFF={managers:r.managers||[],orders:r.orders||[]};
   role=em==OWNER?"owner":STAFF.managers.includes(em)?"manager":STAFF.orders.includes(em)?"orders":"none";
@@ -373,7 +388,7 @@ window.cpInv=async id=>{
 function staffH(){
   const lst=(k,title,hint)=>`<div class="box"><h2>${title}</h2><div class="hint">${hint}</div>${(STAFF[k]||[]).map((e,i)=>`<div class="row"><input value="${esc(e)}" readonly dir="ltr"><button class="btn d sm" onclick="rmStaff('${k}',${i})">حذف</button></div>`).join("")||'<div class="hint">لا أحد</div>'}
     <div class="row"><input id="sf_${k}" type="email" placeholder="الإيميل" dir="ltr"><button class="btn s sm" onclick="addStaff('${k}')">+ إضافة</button></div></div>`;
-  return `<div class="box"><div class="hint">1) أنشئ حساب الموظف في Firebase: Authentication ثم Users ثم Add user.<br>2) أضف إيميله هنا واضغط «حفظ الموظفين».<br>3) يدخل الموظف من نفس رابط الإدارة، ويشوف فقط اللي يخصه.</div></div>`+
+  return `<div class="box"><div class="hint">1) أضف إيميل الموظف هنا واضغط «حفظ الموظفين».<br>2) أرسل له رابط الإدارة. يضغط «حساب جديد» بنفس الإيميل ويختار كلمة مرور ويؤكد بريده.<br>3) بعدها يدخل ويشوف فقط اللي يخصه.</div></div>`+
     lst("orders","🧾 موظفو الطلبات","يشوفون الطلبات والمرتجعات ويغيّرون حالتها فقط.")+
     lst("managers","🛠️ مديرو المتجر","يعدّلون المنتجات والإعدادات والطلبات (بدون إدارة الموظفين).")+
     `<div class="box"><button class="btn" onclick="saveStaff()">💾 حفظ الموظفين</button><div id="stm" class="msg" style="margin-top:6px"></div></div>`;
@@ -393,10 +408,16 @@ window.save=save;
 function render(){
   const a=$("app");
   if(!U){
-    a.innerHTML=`<div class="box" style="margin-top:40px"><h2>🔐 دخول الإدارة</h2><label>الإيميل</label><input id="em" type="email" autocomplete="username"><label>كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"><div class="row"><button class="btn" ${busy?"disabled":""} onclick="login()">دخول</button></div>${err?`<div class="err">${esc(err)}</div>`:""}</div>`;
+    const t=authMode=="up"?"🆕 حساب جديد":authMode=="reset"?"🔑 استعادة كلمة المرور":"🔐 دخول الإدارة";
+    a.innerHTML=`<div class="box" style="margin-top:40px"><h2>${t}</h2><label>الإيميل</label><input id="em" type="email" autocomplete="username" dir="ltr">${authMode!="reset"?`<label>كلمة المرور</label><input id="pw" type="password" autocomplete="${authMode=="up"?"new-password":"current-password"}" onkeydown="if(event.key=='Enter')authGo()">`:""}
+    <div class="row"><button class="btn" ${busy?"disabled":""} onclick="authGo()">${authMode=="up"?"إنشاء الحساب":authMode=="reset"?"إرسال رابط الاستعادة":"دخول"}</button></div>
+    ${err?`<div class="err">${esc(err)}</div>`:""}${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}
+    <div class="row" style="margin-top:12px">${authMode!="in"?`<button class="btn s sm" onclick="am('in')">لدي حساب</button>`:`<button class="btn s sm" onclick="am('up')">حساب جديد</button><button class="btn s sm" onclick="am('reset')">نسيت كلمة المرور</button>`}</div>
+    <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
   const top=`<div class="top"><b>إدارة أسواق الريشي</b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box">هذا الحساب ليس لديه صلاحية. اطلب من المالك إضافة إيميلك.</div>`;return}
   const canEdit=role=="owner"||role=="manager";
   if(canEdit&&needSeed){
