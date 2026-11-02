@@ -60,7 +60,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/(^|\s)ارز/g,"$1رز").toLowerCase();
 const fm=n=>Number(n||0).toLocaleString("en-US");
 
-let CO={},coDirty=false,costsOK=true,authMode="in",info="";
+let CO={},coDirty=false,costsOK=true,authMode="in",info="",roleErr="";
 let role="none",ORD=[],RET=[],ofil="all",oq="",ordMsg="",ordLoaded=false,STAFF={managers:[],orders:[]};
 const OWNER="alrishi562@gmail.com";
 let U=null,C=null,ST=null,IM={},tab="p",q="",dirty=false,msg="",err="",busy=false,needSeed=false;
@@ -115,6 +115,7 @@ async function enter(){
 }
 onAuthStateChanged(auth,async u=>{U=u;if(!u){authMode="in";info=""}await enter()});
 const fbErr=e=>({"auth/email-already-in-use":"هذا الإيميل مسجّل مسبقاً. اضغط «لدي حساب» أو «نسيت كلمة المرور».","auth/weak-password":"كلمة المرور ضعيفة، اجعلها 6 أحرف أو أكثر.","auth/invalid-email":"الإيميل غير صحيح.","auth/too-many-requests":"محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة.","auth/user-not-found":"لا يوجد حساب بهذا الإيميل."}[e&&e.code]||("تعذّر التنفيذ: "+((e&&e.code)||(e&&e.message))));
+window.retryRole=async()=>{await enter()};
 window.am=m=>{authMode=m;err="";info="";render()};
 window.authGo=async()=>{
   const em=$("em").value.trim(),pw=$("pw")?$("pw").value:"";
@@ -136,9 +137,10 @@ window.chkVer=async()=>{
 };
 window.logout=()=>signOut(auth);
 async function detectRole(){
-  const em=(U.email||"").toLowerCase();
+  const em=(U.email||"").toLowerCase();roleErr="";
+  if(em!=OWNER){try{await U.reload();await U.getIdToken(true)}catch(e){}}
   if(em!=OWNER&&!U.emailVerified){role="unverified";return}
-  let r={};try{const d=await getDoc(doc(db,"staff","roles"));if(d.exists())r=d.data()}catch(e){}
+  let r={};try{const d=await getDoc(doc(db,"staff","roles"));if(d.exists())r=d.data()}catch(e){roleErr=e.code||e.message}
   STAFF={managers:r.managers||[],orders:r.orders||[]};
   role=em==OWNER?"owner":STAFF.managers.includes(em)?"manager":STAFF.orders.includes(em)?"orders":"none";
 }
@@ -167,6 +169,7 @@ function listH(){
       <div style="flex:1"><input value="${esc(g.t)}" onchange="ren('${esc(g.k)}',this.value)">
       <div class="row"><select onchange="setcat('${esc(g.k)}',this.value)">${(C.cats||[]).map(c=>`<option ${c==cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
       ${sl.length?`<select onchange="setsub('${esc(g.k)}',this.value)"><option value=""></option>${sl.map(s=>`<option ${s==f.s?"selected":""}>${esc(s)}</option>`).join("")}</select>`:""}</div></div></div>
+      <textarea rows="2" placeholder="تفاصيل المنتج (تظهر للزبون عند الضغط على المنتج)" onchange="setdesc('${esc(g.k)}',this.value)" style="margin-bottom:6px">${esc(f.d||"")}</textarea>
       ${g.v.map(p=>`<div class="v ${p.hide?"dim":""}">
         <input value="${esc(p.u||"")}" placeholder="الوحدة" onchange="setv(${p.id},'u',this.value)">
         <input type="number" inputmode="numeric" value="${p.p}" onchange="setv(${p.id},'p',+this.value)">
@@ -231,6 +234,7 @@ window.ren=(k,v)=>{
   touch();reList();
 };
 window.setcat=(k,v)=>{allOf(k).forEach(p=>{p.c=v;p.s=""});touch();$("list").innerHTML=listH()};
+window.setdesc=(k,v)=>{allOf(k).forEach(p=>{if(v.trim())p.d=v;else delete p.d});touch()};
 window.setsub=(k,v)=>{allOf(k).forEach(p=>p.s=v);touch()};
 window.upl=(k,inp)=>{
   const f=inp.files[0];if(!f)return;
@@ -297,7 +301,7 @@ window.applyPatch=()=>{
   const P=o.products||{};
   (P.update||[]).forEach(u=>{
     const p=find(u);if(!p){rep.push("⚠️ ما لقيت: "+(u.g||u.n||u.id)+" "+(u.u||""));return}
-    ["p","old","hide","e","s","c","o"].forEach(k=>{if(k in u){if((k=="old"||k=="hide")&&!u[k])delete p[k];else p[k]=u[k]}});
+    ["p","old","hide","e","s","c","o","d"].forEach(k=>{if(k in u){if((k=="old"||k=="hide"||k=="d")&&!u[k])delete p[k];else p[k]=u[k]}});
     if(u.newu){p.u=u.newu}
     if(p.g)p.n=p.g+" ("+p.u+")";
     rep.push("✔ عدّلت: "+p.n);
@@ -306,7 +310,7 @@ window.applyPatch=()=>{
     const ex=C.products.find(x=>x.g==a.g),u=a.u||"حبة";
     const n=a.n||(a.g?a.g+" ("+u+")":"");if(!n||!a.p){rep.push("⚠️ ناقص اسم أو سعر");return}
     if(C.products.some(x=>x.n==n)){rep.push("⚠️ موجود مسبقاً: "+n);return}
-    C.products.push({id:nid++,n,p:+a.p,c:a.c||(ex&&ex.c)||"مواد غذائية",s:a.s??(ex&&ex.s)??"",e:a.e||(ex&&ex.e)||"🛍️",g:a.g,u,o:a.o??0});
+    C.products.push({id:nid++,n,p:+a.p,c:a.c||(ex&&ex.c)||"مواد غذائية",s:a.s??(ex&&ex.s)??"",e:a.e||(ex&&ex.e)||"🛍️",g:a.g,u,o:a.o??0,...(a.d?{d:a.d}:{})});
     rep.push("➕ أضفت: "+n);
   });
   (P.remove||[]).forEach(r=>{
@@ -418,7 +422,7 @@ function render(){
   }
   const top=`<div class="top"><b>إدارة أسواق الريشي</b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
-  if(role=="none"){a.innerHTML=top+`<div class="box">هذا الحساب ليس لديه صلاحية. اطلب من المالك إضافة إيميلك.</div>`;return}
+  if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
   if(canEdit&&needSeed){
     a.innerHTML=top+`<div class="box"><h2>أول مرة؟</h2><p>القاعدة فاضية. اضغط الزر لنقل بيانات المتجر الحالية (المنتجات والأسعار والإعدادات والصور) إلى قاعدة البيانات.</p><button class="btn" ${busy?"disabled":""} onclick="seed()">استيراد بيانات المتجر</button>${err?`<div class="err">${esc(err)}</div>`:""}</div>`;
