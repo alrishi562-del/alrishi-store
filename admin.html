@@ -39,23 +39,17 @@ button{font-family:inherit;cursor:pointer}
 .err{color:var(--rd);font-size:14px;margin-top:8px}
 .dim{opacity:.45}
 .hint{font-size:12px;color:var(--mu);margin-top:4px}
-
-/* الهوية البصرية لأسواق الريشي: أزرق وأبيض */
-:root{--pr:#1769aa;--bg:#f3f8fd;--card:#fff;--tx:#14243a;--mu:#66778c;--bd:#d9e5f1;--rd:#c92a2a;color-scheme:light}
-body{background:var(--bg);color:var(--tx)}
-.top{box-shadow:0 3px 14px rgba(20,77,131,.06)}
-.tab.on,.btn{background:#1769aa;border-color:#1769aa}
-.box{box-shadow:0 4px 16px rgba(20,77,131,.045)}
-input,select,textarea{background:#fff}
-@media(min-width:800px){body{max-width:1440px;margin:0 auto;padding-bottom:90px}.top{padding:18px 28px}.tabs{padding:16px 28px}.box{margin:14px 28px;padding:18px}.v{grid-template-columns:1.5fr 1fr 1fr auto;gap:10px}.bar{padding:14px 28px}}
-
+.vc{display:flex;gap:6px;align-items:center;margin:3px 0 8px}
+.vc input{padding:7px;font-size:13px;flex:1;min-width:0}
+.vc .pf{flex:1.4;font-size:12px;color:var(--mu);text-align:center}
+.pf.ok{color:var(--pr);font-weight:700}.pf.bad{color:var(--rd);font-weight:700}
 </style>
 </head>
 <body>
 <div id="app"><div class="box">جاري التحميل…</div></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const cfg={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
@@ -66,6 +60,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/(^|\s)ارز/g,"$1رز").toLowerCase();
 const fm=n=>Number(n||0).toLocaleString("en-US");
 
+let CO={},coDirty=false,costsOK=true,authMode="in",info="",roleErr="";
 let role="none",ORD=[],RET=[],ofil="all",oq="",ordMsg="",ordLoaded=false,STAFF={managers:[],orders:[]};
 const OWNER="alrishi562@gmail.com";
 let U=null,C=null,ST=null,IM={},tab="p",q="",dirty=false,msg="",err="",busy=false,needSeed=false;
@@ -76,6 +71,8 @@ async function load(){
   if(!c.exists()||!s.exists()){needSeed=true;C=null;return}
   C=JSON.parse(c.data().json);ST=JSON.parse(s.data().json);IM=i.exists()?JSON.parse(i.data().json):{};
   needSeed=false;
+  try{const c=await getDoc(doc(db,"private","costs"));CO=c.exists()?JSON.parse(c.data().json):{};costsOK=true}catch(e){CO={};costsOK=false}
+  coDirty=false;
 }
 async function save(){
   busy=true;msg="جاري الحفظ…";bar();
@@ -86,6 +83,10 @@ async function save(){
       setDoc(R("images"),{json:JSON.stringify(IM),t:Date.now()})]);
     dirty=false;msg="تم الحفظ ✅ وظهر عند الزبائن";
   }catch(e){msg="تعذّر الحفظ: "+(e.code||e.message)}
+  if(coDirty){
+    try{await setDoc(doc(db,"private","costs"),{json:JSON.stringify(CO),t:Date.now()});coDirty=false;costsOK=true}
+    catch(e){costsOK=false;msg+=" — لكن تعذّر حفظ أسعار الشراء ("+(e.code||e.message)+"): حدّث قواعد Firebase"}
+  }
   busy=false;bar();
 }
 window.seed=async()=>{
@@ -102,27 +103,44 @@ window.seed=async()=>{
 };
 
 /* ---------- الدخول ---------- */
-onAuthStateChanged(auth,async u=>{
-  U=u;err="";role="none";ordLoaded=false;ORD=[];RET=[];
-  if(u){
+async function enter(){
+  err="";role="none";ordLoaded=false;ORD=[];RET=[];
+  if(U){
     await detectRole();
     if(role=="owner"||role=="manager"){try{await load()}catch(e){err="تعذّر قراءة البيانات: "+(e.code||e.message)}}
     if(role=="orders")tab="o";
   }
   render();
-  if(u&&role=="orders")loadOrders();
-});
-window.login=async()=>{
-  const em=$("em").value.trim(),pw=$("pw").value;
-  err="";busy=true;render();
-  try{await signInWithEmailAndPassword(auth,em,pw)}
-  catch(e){err="الإيميل أو كلمة المرور غير صحيحة";busy=false;render();return}
-  busy=false;
+  if(U&&role=="orders")loadOrders();
+}
+onAuthStateChanged(auth,async u=>{U=u;if(!u){authMode="in";info=""}await enter()});
+const fbErr=e=>({"auth/email-already-in-use":"هذا الإيميل مسجّل مسبقاً. اضغط «لدي حساب» أو «نسيت كلمة المرور».","auth/weak-password":"كلمة المرور ضعيفة، اجعلها 6 أحرف أو أكثر.","auth/invalid-email":"الإيميل غير صحيح.","auth/too-many-requests":"محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة.","auth/user-not-found":"لا يوجد حساب بهذا الإيميل."}[e&&e.code]||("تعذّر التنفيذ: "+((e&&e.code)||(e&&e.message))));
+window.retryRole=async()=>{await enter()};
+window.am=m=>{authMode=m;err="";info="";render()};
+window.authGo=async()=>{
+  const em=$("em").value.trim(),pw=$("pw")?$("pw").value:"";
+  err="";info="";busy=true;render();
+  try{
+    if(authMode=="reset"){await sendPasswordResetEmail(auth,em);info="أرسلنا رابط استعادة كلمة المرور إلى بريدك (تفقد الرسائل غير المرغوبة أيضاً)."}
+    else if(authMode=="up"){
+      if(pw.length<6)err="كلمة المرور 6 أحرف على الأقل.";
+      else{const c=await createUserWithEmailAndPassword(auth,em,pw);try{await sendEmailVerification(c.user)}catch(e){}}
+    }else await signInWithEmailAndPassword(auth,em,pw);
+  }catch(e){err=authMode=="in"?"الإيميل أو كلمة المرور غير صحيحة":fbErr(e)}
+  busy=false;if(!U)render();
+};
+window.login=window.authGo;
+window.resendVer=async()=>{try{await sendEmailVerification(auth.currentUser);info="أعدنا إرسال رابط التأكيد."}catch(e){info=fbErr(e)}render()};
+window.chkVer=async()=>{
+  try{await auth.currentUser.reload();await auth.currentUser.getIdToken(true);U=auth.currentUser}catch(e){info=fbErr(e)}
+  if(U&&(U.emailVerified)){info="";await enter()}else{info="لسا ما تأكد البريد. افتح الرسالة واضغط على الرابط داخلها، ثم ارجع هنا.";render()}
 };
 window.logout=()=>signOut(auth);
 async function detectRole(){
-  const em=(U.email||"").toLowerCase();
-  let r={};try{const d=await getDoc(doc(db,"staff","roles"));if(d.exists())r=d.data()}catch(e){}
+  const em=(U.email||"").toLowerCase();roleErr="";
+  if(em!=OWNER){try{await U.reload();await U.getIdToken(true)}catch(e){}}
+  if(em!=OWNER&&!U.emailVerified){role="unverified";return}
+  let r={};try{const d=await getDoc(doc(db,"staff","roles"));if(d.exists())r=d.data()}catch(e){roleErr=e.code||e.message}
   STAFF={managers:r.managers||[],orders:r.orders||[]};
   role=em==OWNER?"owner":STAFF.managers.includes(em)?"manager":STAFF.orders.includes(em)?"orders":"none";
 }
@@ -151,12 +169,13 @@ function listH(){
       <div style="flex:1"><input value="${esc(g.t)}" onchange="ren('${esc(g.k)}',this.value)">
       <div class="row"><select onchange="setcat('${esc(g.k)}',this.value)">${(C.cats||[]).map(c=>`<option ${c==cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
       ${sl.length?`<select onchange="setsub('${esc(g.k)}',this.value)"><option value=""></option>${sl.map(s=>`<option ${s==f.s?"selected":""}>${esc(s)}</option>`).join("")}</select>`:""}</div></div></div>
+      <textarea rows="2" placeholder="تفاصيل المنتج (تظهر للزبون عند الضغط على المنتج)" onchange="setdesc('${esc(g.k)}',this.value)" style="margin-bottom:6px">${esc(f.d||"")}</textarea>
       ${g.v.map(p=>`<div class="v ${p.hide?"dim":""}">
         <input value="${esc(p.u||"")}" placeholder="الوحدة" onchange="setv(${p.id},'u',this.value)">
         <input type="number" inputmode="numeric" value="${p.p}" onchange="setv(${p.id},'p',+this.value)">
         <input type="number" inputmode="numeric" value="${p.old||""}" placeholder="قبل الخصم" onchange="setv(${p.id},'old',+this.value||0)">
         <div><label class="chk"><input type="checkbox" ${p.hide?"checked":""} onchange="setv(${p.id},'hide',this.checked)">مخفي</label>
-        <button class="btn d" onclick="delv(${p.id})">حذف</button></div></div>`).join("")}
+        <button class="btn d" onclick="delv(${p.id})">حذف</button></div></div><div class="vc"><input type="number" inputmode="numeric" placeholder="سعر الشراء" value="${CO[p.id]||""}" onchange="setcost(${p.id},+this.value)"><span class="pf ${pfCls(p)}" id="pf${p.id}">${pfTxt(p)}</span><input type="number" inputmode="decimal" placeholder="ربح %" onchange="setmk(${p.id},+this.value);this.value=''"></div>`).join("")}
       <div class="row"><button class="btn s sm" onclick="addv('${esc(g.k)}')">+ إضافة وحدة</button></div></div>`}).join("");
 }
 function prodH(){
@@ -170,6 +189,13 @@ function prodH(){
     <div class="row"><button class="btn" onclick="addp()">إضافة</button></div></div>
     <div id="list">${listH()}</div>`;
 }
+const pfTxt=p=>{const c=+CO[p.id];if(!c)return "أدخل سعر الشراء";const d=p.p-c,pc=Math.round(d/c*1000)/10;return (d>=0?"ربح ":"خسارة ")+fm(Math.abs(d))+" ("+pc+"%)"};
+const pfCls=p=>{const c=+CO[p.id];return !c?"":p.p>=c?"ok":"bad"};
+const pfUpd=id=>{const p=C.products.find(x=>x.id==id),e=$("pf"+id);if(p&&e){e.textContent=pfTxt(p);e.className="pf "+pfCls(p)}};
+window.setcost=(id,v)=>{if(v>0)CO[id]=v;else delete CO[id];coDirty=true;touch();pfUpd(id)};
+window.setmk=(id,pct)=>{const p=C.products.find(x=>x.id==id),c=+CO[id];
+  if(!p)return;if(!c)return alert("اكتب سعر الشراء أولاً");if(!(pct>-100))return;
+  const raw=c*(1+pct/100),st=raw>=1000?50:25;p.p=Math.ceil(Math.round(raw*1e6)/1e6/st)*st;touch();reList()};
 window.srch=v=>{q=v;$("list").innerHTML=listH()};
 window.npc=()=>{const c=$("np_c").value,sl=(C.subs||{})[c]||[];$("np_s").innerHTML='<option value=""></option>'+sl.map(s=>`<option>${esc(s)}</option>`).join("")};
 const touch=()=>{dirty=true;msg="";bar()};
@@ -180,9 +206,9 @@ window.setv=(id,k,v)=>{
   else if(k=="old"){if(v>0)p.old=v;else delete p.old}
   else if(k=="u"){p.u=v;if(p.g)p.n=p.g+" ("+v+")"}
   else p[k]=v;
-  touch();if(k=="hide"||k=="u")reList();
+  touch();if(k=="p")pfUpd(id);if(k=="hide"||k=="u")reList();
 };
-window.delv=id=>{if(!confirm("حذف هذه الوحدة نهائياً؟"))return;C.products=C.products.filter(x=>x.id!=id);touch();$("list").innerHTML=listH()};
+window.delv=id=>{if(!confirm("حذف هذه الوحدة نهائياً؟"))return;C.products=C.products.filter(x=>x.id!=id);if(CO[id]){delete CO[id];coDirty=true}touch();reList()};
 window.addv=k=>{
   const a=allOf(k),f=a[0],u=prompt("اسم الوحدة (مثلاً: كرتون 24)");if(!u)return;
   const pr=+prompt("السعر");if(!pr)return;
@@ -208,6 +234,7 @@ window.ren=(k,v)=>{
   touch();reList();
 };
 window.setcat=(k,v)=>{allOf(k).forEach(p=>{p.c=v;p.s=""});touch();$("list").innerHTML=listH()};
+window.setdesc=(k,v)=>{allOf(k).forEach(p=>{if(v.trim())p.d=v;else delete p.d});touch()};
 window.setsub=(k,v)=>{allOf(k).forEach(p=>p.s=v);touch()};
 window.upl=(k,inp)=>{
   const f=inp.files[0];if(!f)return;
@@ -274,7 +301,7 @@ window.applyPatch=()=>{
   const P=o.products||{};
   (P.update||[]).forEach(u=>{
     const p=find(u);if(!p){rep.push("⚠️ ما لقيت: "+(u.g||u.n||u.id)+" "+(u.u||""));return}
-    ["p","old","hide","e","s","c","o"].forEach(k=>{if(k in u){if((k=="old"||k=="hide")&&!u[k])delete p[k];else p[k]=u[k]}});
+    ["p","old","hide","e","s","c","o","d"].forEach(k=>{if(k in u){if((k=="old"||k=="hide"||k=="d")&&!u[k])delete p[k];else p[k]=u[k]}});
     if(u.newu){p.u=u.newu}
     if(p.g)p.n=p.g+" ("+p.u+")";
     rep.push("✔ عدّلت: "+p.n);
@@ -283,7 +310,7 @@ window.applyPatch=()=>{
     const ex=C.products.find(x=>x.g==a.g),u=a.u||"حبة";
     const n=a.n||(a.g?a.g+" ("+u+")":"");if(!n||!a.p){rep.push("⚠️ ناقص اسم أو سعر");return}
     if(C.products.some(x=>x.n==n)){rep.push("⚠️ موجود مسبقاً: "+n);return}
-    C.products.push({id:nid++,n,p:+a.p,c:a.c||(ex&&ex.c)||"مواد غذائية",s:a.s??(ex&&ex.s)??"",e:a.e||(ex&&ex.e)||"🛍️",g:a.g,u,o:a.o??0});
+    C.products.push({id:nid++,n,p:+a.p,c:a.c||(ex&&ex.c)||"مواد غذائية",s:a.s??(ex&&ex.s)??"",e:a.e||(ex&&ex.e)||"🛍️",g:a.g,u,o:a.o??0,...(a.d?{d:a.d}:{})});
     rep.push("➕ أضفت: "+n);
   });
   (P.remove||[]).forEach(r=>{
@@ -291,6 +318,8 @@ window.applyPatch=()=>{
     C.products=C.products.filter(p=>!(r.id!=null?p.id==r.id:r.n?p.n==r.n:(r.u?(p.g==r.g&&p.u==r.u):(p.g==r.g||p.n==r.g))));
     rep.push(before>C.products.length?"🗑 حذفت: "+(r.n||r.g||r.id)+" ("+(before-C.products.length)+")":"⚠️ ما لقيت للحذف: "+(r.n||r.g||r.id));
   });
+  (o.costs||[]).forEach(c=>{const p=C.products.find(x=>c.id!=null?x.id==c.id:(c.n?x.n==c.n:(x.g==c.g&&x.u==c.u)));
+    if(p&&c.cost>0){CO[p.id]=c.cost;coDirty=true;rep.push("💰 سعر شراء: "+p.n)}else rep.push("⚠️ ما لقيت للشراء: "+(c.g||c.n||c.id))});
   if(o.subs)Object.entries(o.subs).forEach(([c,l])=>{C.subs=C.subs||{};C.subs[c]=[...new Set([...(C.subs[c]||[]),...l])]; rep.push("📁 أقسام: "+l.join("، "))});
   if(o.settings){Object.assign(ST,o.settings);rep.push("⚙️ عدّلت الإعدادات: "+Object.keys(o.settings).join("، "))}
   if(!rep.length)rep.push("لا يوجد شيء لتطبيقه");
@@ -363,7 +392,7 @@ window.cpInv=async id=>{
 function staffH(){
   const lst=(k,title,hint)=>`<div class="box"><h2>${title}</h2><div class="hint">${hint}</div>${(STAFF[k]||[]).map((e,i)=>`<div class="row"><input value="${esc(e)}" readonly dir="ltr"><button class="btn d sm" onclick="rmStaff('${k}',${i})">حذف</button></div>`).join("")||'<div class="hint">لا أحد</div>'}
     <div class="row"><input id="sf_${k}" type="email" placeholder="الإيميل" dir="ltr"><button class="btn s sm" onclick="addStaff('${k}')">+ إضافة</button></div></div>`;
-  return `<div class="box"><div class="hint">1) أنشئ حساب الموظف في Firebase: Authentication ثم Users ثم Add user.<br>2) أضف إيميله هنا واضغط «حفظ الموظفين».<br>3) يدخل الموظف من نفس رابط الإدارة، ويشوف فقط اللي يخصه.</div></div>`+
+  return `<div class="box"><div class="hint">1) أضف إيميل الموظف هنا واضغط «حفظ الموظفين».<br>2) أرسل له رابط الإدارة. يضغط «حساب جديد» بنفس الإيميل ويختار كلمة مرور ويؤكد بريده.<br>3) بعدها يدخل ويشوف فقط اللي يخصه.</div></div>`+
     lst("orders","🧾 موظفو الطلبات","يشوفون الطلبات والمرتجعات ويغيّرون حالتها فقط.")+
     lst("managers","🛠️ مديرو المتجر","يعدّلون المنتجات والإعدادات والطلبات (بدون إدارة الموظفين).")+
     `<div class="box"><button class="btn" onclick="saveStaff()">💾 حفظ الموظفين</button><div id="stm" class="msg" style="margin-top:6px"></div></div>`;
@@ -383,11 +412,17 @@ window.save=save;
 function render(){
   const a=$("app");
   if(!U){
-    a.innerHTML=`<div class="box" style="margin-top:40px"><h2>🔐 دخول الإدارة</h2><label>الإيميل</label><input id="em" type="email" autocomplete="username"><label>كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"><div class="row"><button class="btn" ${busy?"disabled":""} onclick="login()">دخول</button></div>${err?`<div class="err">${esc(err)}</div>`:""}</div>`;
+    const t=authMode=="up"?"🆕 حساب جديد":authMode=="reset"?"🔑 استعادة كلمة المرور":"🔐 دخول الإدارة";
+    a.innerHTML=`<div class="box" style="margin-top:40px"><h2>${t}</h2><label>الإيميل</label><input id="em" type="email" autocomplete="username" dir="ltr">${authMode!="reset"?`<label>كلمة المرور</label><input id="pw" type="password" autocomplete="${authMode=="up"?"new-password":"current-password"}" onkeydown="if(event.key=='Enter')authGo()">`:""}
+    <div class="row"><button class="btn" ${busy?"disabled":""} onclick="authGo()">${authMode=="up"?"إنشاء الحساب":authMode=="reset"?"إرسال رابط الاستعادة":"دخول"}</button></div>
+    ${err?`<div class="err">${esc(err)}</div>`:""}${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}
+    <div class="row" style="margin-top:12px">${authMode!="in"?`<button class="btn s sm" onclick="am('in')">لدي حساب</button>`:`<button class="btn s sm" onclick="am('up')">حساب جديد</button><button class="btn s sm" onclick="am('reset')">نسيت كلمة المرور</button>`}</div>
+    <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
   const top=`<div class="top"><b>إدارة أسواق الريشي</b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
-  if(role=="none"){a.innerHTML=top+`<div class="box">هذا الحساب ليس لديه صلاحية. اطلب من المالك إضافة إيميلك.</div>`;return}
+  if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
+  if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
   if(canEdit&&needSeed){
     a.innerHTML=top+`<div class="box"><h2>أول مرة؟</h2><p>القاعدة فاضية. اضغط الزر لنقل بيانات المتجر الحالية (المنتجات والأسعار والإعدادات والصور) إلى قاعدة البيانات.</p><button class="btn" ${busy?"disabled":""} onclick="seed()">استيراد بيانات المتجر</button>${err?`<div class="err">${esc(err)}</div>`:""}</div>`;
