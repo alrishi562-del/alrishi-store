@@ -508,7 +508,9 @@ async function loadRemote(){
   try{
   const {F,db}=await fbInit();
   const g=async k=>{const s=await F.getDoc(F.doc(db,"store",k));return s.exists()?JSON.parse(s.data().json):null};
-  const [c,s,im]=await Promise.all([g("catalog"),g("settings"),g("images")]);
+  const gi=async()=>{const s=await F.getDoc(F.doc(db,"store","images"));if(!s.exists())return null;const d=s.data(),o=JSON.parse(d.json),n=+d.n||1;
+    for(let j=1;j<n;j++){try{const x=await g("images_"+j);if(x)Object.assign(o,x)}catch(e){}}return o};
+  const [c,s,im]=await Promise.all([g("catalog"),g("settings"),gi()]);
   if(!okData(c,s))return;
   applyData(c,s,im,true);OFF.set({c,s,im,t:Date.now()});
 }catch(e){console.warn("remote data unavailable (using saved copy)",e)}}

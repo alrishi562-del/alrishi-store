@@ -75,9 +75,20 @@ async function load(){
   const [c,s,i]=await Promise.all(["catalog","settings","images"].map(k=>getDoc(R(k))));
   if(!c.exists()||!s.exists()){needSeed=true;C=null;return}
   C=JSON.parse(c.data().json);ST=JSON.parse(s.data().json);IM=i.exists()?JSON.parse(i.data().json):{};
+  IMN=i.exists()?(+i.data().n||1):1;
+  for(let j=1;j<IMN;j++){try{const x=await getDoc(R("images_"+j));if(x.exists())Object.assign(IM,JSON.parse(x.data().json))}catch(e){}}
   needSeed=false;
   try{const c=await getDoc(doc(db,"private","costs"));CO=c.exists()?JSON.parse(c.data().json):{};costsOK=true}catch(e){CO={};costsOK=false}
   coDirty=false;
+}
+let IMN=1;
+async function saveImages(){
+  const parts=[];let cur={},sz=0;
+  for(const k of Object.keys(IM)){const l=String(IM[k]).length+k.length+12;if(sz+l>600000&&Object.keys(cur).length){parts.push(cur);cur={};sz=0}cur[k]=IM[k];sz+=l}
+  parts.push(cur);
+  await Promise.all(parts.map((x,i)=>setDoc(R(i?"images_"+i:"images"),{json:JSON.stringify(x),t:Date.now(),n:parts.length})));
+  for(let i=parts.length;i<IMN;i++){try{await deleteDoc(R("images_"+i))}catch(e){}}
+  IMN=parts.length;
 }
 async function save(){
   busy=true;msg="جاري الحفظ…";bar();
@@ -85,7 +96,7 @@ async function save(){
     await Promise.all([
       setDoc(R("catalog"),{json:JSON.stringify(C),t:Date.now()}),
       setDoc(R("settings"),{json:JSON.stringify(ST),t:Date.now()}),
-      setDoc(R("images"),{json:JSON.stringify(IM),t:Date.now()})]);
+      saveImages()]);
     dirty=false;msg="تم الحفظ ✅ وظهر عند الزبائن";
   }catch(e){msg="تعذّر الحفظ: "+(e.code||e.message)}
   if(bigDirty.size){
