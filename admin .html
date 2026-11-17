@@ -187,10 +187,35 @@ function listH(){
         <button class="btn d" onclick="delv(${p.id})">حذف</button></div></div><div class="vc"><input type="number" inputmode="numeric" placeholder="سعر الشراء" value="${CO[p.id]||""}" onchange="setcost(${p.id},+this.value)"><span class="pf ${pfCls(p)}" id="pf${p.id}">${pfTxt(p)}</span><input type="number" inputmode="decimal" placeholder="ربح %" onchange="setmk(${p.id},+this.value);this.value=''"></div>`).join("")}
       <div class="row"><button class="btn s sm" onclick="addv('${esc(g.k)}')">+ إضافة وحدة</button></div></div>`}).join("");
 }
+
+function catH(){
+  const cats=C.cats||[],subs=C.subs||{};
+  const n=c=>C.products.filter(p=>p.c==c).length;
+  return `<div class="hint">الأقسام تظهر للزبون في الشريط العلوي. الحذف يتم فقط للقسم الفاضي من المنتجات.</div>`+
+  cats.map((c,i)=>`<div class="box" style="background:#f8f8f8"><div class="row">
+    <input value="${esc(c)}" onchange="catRen(${i},this.value)" style="flex:1">
+    <button class="btn s sm" onclick="catMv(${i},-1)">▲</button><button class="btn s sm" onclick="catMv(${i},1)">▼</button>
+    <button class="btn d sm" onclick="catDel(${i})">حذف</button></div>
+    <div class="hint">${n(c)} منتج</div>
+    ${(subs[c]||[]).map((x,j)=>`<div class="row" style="margin-top:4px"><span>↳</span><input value="${esc(x)}" onchange="subRen(${i},${j},this.value)" style="flex:1"><button class="btn d sm" onclick="subDel(${i},${j})">حذف</button></div>`).join("")}
+    <div class="row" style="margin-top:6px"><input id="ns${i}" placeholder="قسم فرعي جديد" style="flex:1"><button class="btn s sm" onclick="subAdd(${i})">+ فرعي</button></div></div>`).join("")+
+  `<div class="row"><input id="nc_n" placeholder="اسم قسم جديد" style="flex:1"><button class="btn" onclick="catAdd()">+ إضافة قسم</button></div>`;
+}
+const reCat=()=>setTimeout(()=>{const l=$("catlist");if(l)l.innerHTML=catH();const c=$("np_c");if(c){c.innerHTML=(C.cats||[]).map(x=>`<option>${esc(x)}</option>`).join("");npc()}reList()},0);
+window.catAdd=()=>{const v=$("nc_n").value.trim();if(!v)return;if((C.cats||[]).includes(v))return alert("القسم موجود");C.cats.push(v);C.subs=C.subs||{};C.subs[v]=[];touch();reCat()};
+window.catRen=(i,v)=>{v=v.trim();const o=C.cats[i];if(!v||v==o)return reCat();if(C.cats.includes(v)){alert("الاسم مستخدم");return reCat()}
+  C.cats[i]=v;C.subs[v]=C.subs[o]||[];delete C.subs[o];C.products.forEach(p=>{if(p.c==o)p.c=v});touch();reCat()};
+window.catMv=(i,d)=>{const j=i+d;if(j<0||j>=C.cats.length)return;[C.cats[i],C.cats[j]]=[C.cats[j],C.cats[i]];touch();reCat()};
+window.catDel=i=>{const c=C.cats[i];if(C.products.some(p=>p.c==c))return alert("القسم فيه منتجات. انقلها لقسم ثاني أولاً.");
+  if(!confirm("حذف القسم «"+c+"»؟"))return;C.cats.splice(i,1);delete C.subs[c];touch();reCat()};
+window.subAdd=i=>{const c=C.cats[i],v=$("ns"+i).value.trim();if(!v)return;C.subs[c]=C.subs[c]||[];if(C.subs[c].includes(v))return;C.subs[c].push(v);touch();reCat()};
+window.subRen=(i,j,v)=>{v=v.trim();const c=C.cats[i],o=C.subs[c][j];if(!v||v==o)return reCat();C.subs[c][j]=v;C.products.forEach(p=>{if(p.c==c&&p.s==o)p.s=v});touch();reCat()};
+window.subDel=(i,j)=>{const c=C.cats[i],o=C.subs[c][j];if(!confirm("حذف القسم الفرعي «"+o+"»؟ المنتجات ستبقى بدون قسم فرعي."))return;C.subs[c].splice(j,1);C.products.forEach(p=>{if(p.c==c&&p.s==o)delete p.s});touch();reCat()};
 function prodH(){
   const cats=C.cats||[];
   return `<div class="box"><input id="q" placeholder="🔍 ابحث عن منتج" value="${esc(q)}" oninput="srch(this.value)">
     <div class="hint">السعر الأول = السعر الحالي. «قبل الخصم» اتركه فاضي لو ما فيه تخفيض.</div></div>
+    <details class="box" id="cbox"><summary style="font-weight:700;cursor:pointer">🗂️ إدارة الأقسام</summary><div id="catlist">${catH()}</div></details>
     <div class="box"><h2>➕ منتج جديد</h2>
     <label>الاسم</label><input id="np_n"><div class="row"><div><label>القسم</label><select id="np_c" onchange="npc()">${cats.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div>
     <div><label>القسم الفرعي</label><select id="np_s"></select></div></div>
