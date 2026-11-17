@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://alrishi562-del.github.io/alrishi-store/sitemap.xml
