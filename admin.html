@@ -427,10 +427,35 @@ function ordH(){
 }
 window.osrch=v=>{oq=v;$("olist").innerHTML=ordListH()};
 window.ofl=k=>{ofil=k;render()};
+let stkNote="";
+const STK_ST=["prep","way","done"];
+function applyStock(o,sign){
+  const L=[];
+  (o.items||[]).forEach(it=>{
+    const p=C.products.find(x=>x.n==it.n);if(!p){L.push("⚠️ غير موجود في المنتجات: "+it.n);return}
+    const k=gkey(p),g=gqOfK(k);
+    if(isLinked(k)&&g!=null){const ng=Math.max(0,g+sign*(+it.q)*fOf(p));allOf(k).forEach(x=>x.gq=ng);L.push(it.n+" ← باقي "+Math.floor(ng/fOf(p)))}
+    else if(p.q!=null){p.q=Math.max(0,+p.q+sign*(+it.q));L.push(it.n+" ← باقي "+p.q)}
+  });
+  return L;
+}
 window.setSt=async(col,id,v)=>{
+  stkNote="";
   try{await updateDoc(doc(db,col,id),{st:v});const a=col=="orders"?ORD:RET,x=a.find(o=>o.id==id);if(x)x.st=v}
-  catch(e){alert("تعذّر تغيير الحالة: "+(e.code||e.message))}
-  const l=$("olist");if(l)l.innerHTML=ordListH();
+  catch(e){alert("تعذّر تغيير الحالة: "+(e.code||e.message));const l=$("olist");if(l)l.innerHTML=ordListH();return}
+  if(col=="orders"&&C&&(role=="owner"||role=="manager")){
+    const o=ORD.find(x=>x.id==id);
+    if(o){const key=o.no||o.id,want=STK_ST.includes(v),has=!!(C.ded&&C.ded[key]);let L=null;
+      if(want&&!has){L=applyStock(o,-1);C.ded=C.ded||{};C.ded[key]=1}
+      else if(!want&&has){L=applyStock(o,1);delete C.ded[key]}
+      if(L){
+        const ks=Object.keys(C.ded||{});if(ks.length>600)ks.slice(0,ks.length-600).forEach(k=>delete C.ded[k]);
+        try{await setDoc(R("catalog"),{json:JSON.stringify(C),t:Date.now()});
+          stkNote=(want?"📦 خُصمت الكمية من المخزون":"↩️ أُعيدت الكمية للمخزون")+(L.length?":<br>"+L.map(esc).join("<br>"):" (لا توجد أصناف بمخزون محدد)")}
+        catch(e){stkNote="⚠️ تغيّرت الحالة لكن تعذّر تحديث المخزون: "+esc(e.code||e.message)}
+      }}
+  }
+  const l=$("olist");if(l)l.innerHTML=(stkNote?'<div class="box" style="background:#e8f5e9;font-size:13px">'+stkNote+'</div>':'')+ordListH();
 };
 window.delOrd=async(col,id)=>{
   if(!confirm("حذف نهائي؟"))return;
@@ -458,7 +483,40 @@ window.rmStaff=(k,i)=>{STAFF[k].splice(i,1);render()};
 window.saveStaff=async()=>{try{await setDoc(doc(db,"staff","roles"),{managers:STAFF.managers||[],orders:STAFF.orders||[]});$("stm").textContent="تم الحفظ ✅"}catch(e){$("stm").textContent="تعذّر الحفظ: "+(e.code||e.message)}};
 
 /* ---------- الواجهة ---------- */
-window.go=t=>{tab=t;render();if(t=="o"&&!ordLoaded)loadOrders()};
+
+/* ---------- التقارير ---------- */
+let rfil="7";
+const dayStart=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime()};
+function repH(){
+  if(ordMsg)return `<div class="box">${esc(ordMsg)}</div>`;
+  if(!ordLoaded)return '<div class="box">جاري تحميل الطلبات…</div>';
+  const from=rfil=="1"?dayStart():rfil=="all"?0:Date.now()-(+rfil)*864e5;
+  const L=ORD.filter(o=>o.st!="cancel"&&(+o.t||0)>=from);
+  const sum=(a,f)=>a.reduce((t,x)=>t+(+f(x)||0),0);
+  const sales=sum(L,o=>o.total),fees=sum(L,o=>o.fee),sub=sum(L,o=>o.sub);
+  const pm=new Map(),zm=new Map();let profit=0,nocost=0;
+  L.forEach(o=>{
+    const z=zm.get(o.zone||"—")||{n:0,t:0};z.n++;z.t+=+o.total||0;zm.set(o.zone||"—",z);
+    (o.items||[]).forEach(it=>{
+      const e=pm.get(it.n)||{q:0,t:0};e.q+=+it.q||0;e.t+=(+it.p||0)*(+it.q||0);pm.set(it.n,e);
+      const pr=C&&C.products.find(x=>x.n==it.n),c=pr?+CO[pr.id]:0;
+      if(c>0)profit+=((+it.p||0)-c)*(+it.q||0);else nocost+=1;
+    });
+  });
+  const top=[...pm.entries()].sort((a,b)=>b[1].q-a[1].q).slice(0,10);
+  const fl=[["1","اليوم"],["7","7 أيام"],["30","30 يوم"],["all","الكل"]];
+  const card=(t,v)=>`<div class="box" style="flex:1;min-width:140px;text-align:center"><div class="hint">${t}</div><b style="font-size:18px">${v}</b></div>`;
+  return `<div class="box"><div class="tabs" style="padding:0">${fl.map(([k,l])=>`<button class="tab ${rfil==k?"on":""}" onclick="rfl('${k}')">${l}</button>`).join("")}</div>
+    <div class="hint" style="margin-top:6px">تُحسب الطلبات غير الملغية من آخر ${ORD.length} طلب محمّل. <a href="#" onclick="loadOrders();return false">🔄 تحديث</a></div></div>
+  <div class="row" style="flex-wrap:wrap">${card("عدد الطلبات",L.length)}${card("المبيعات",fm(sales))}</div>
+  <div class="row" style="flex-wrap:wrap">${card("المنتجات",fm(sub))}${card("رسوم التوصيل",fm(fees))}</div>
+  <div class="row" style="flex-wrap:wrap">${card("الربح التقديري",fm(Math.round(profit)))}${card("متوسط الطلب",L.length?fm(Math.round(sales/L.length)):0)}</div>
+  ${nocost?`<div class="hint">الربح محسوب للأصناف اللي أدخلت لها سعر الشراء فقط (${nocost} بند بدون سعر شراء).</div>`:""}
+  <div class="box"><h2>🏆 الأكثر مبيعاً</h2>${top.length?top.map(([n,e],i)=>`<div class="row" style="justify-content:space-between"><span>${i+1}. ${esc(n)}</span><b>${e.q} × — ${fm(e.t)}</b></div>`).join(""):"لا توجد بيانات"}</div>
+  <div class="box"><h2>🗺️ حسب المنطقة</h2>${zm.size?[...zm.entries()].sort((a,b)=>b[1].t-a[1].t).map(([n,e])=>`<div class="row" style="justify-content:space-between"><span>${esc(n)}</span><b>${e.n} طلب — ${fm(e.t)}</b></div>`).join(""):"لا توجد بيانات"}</div>`;
+}
+window.rfl=k=>{rfil=k;render()};
+window.go=t=>{tab=t;render();if((t=="o"||t=="r")&&!ordLoaded)loadOrders()};
 function bar(){
   const m=$("bm"),s=$("bs");if(!m||!s)return;
   m.textContent=msg||(dirty?"⚠️ عندك تعديلات غير محفوظة":"");
@@ -485,11 +543,11 @@ function render(){
     return;
   }
   if(canEdit&&!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}</div>`;return}
-  const tabs=canEdit?[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"],["o","📋 الطلبات"],...(role=="owner"?[["u","👥 الموظفون"]]:[])]:[["o","📋 الطلبات"]];
+  const tabs=canEdit?[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"],["o","📋 الطلبات"],["r","📊 التقارير"],...(role=="owner"?[["u","👥 الموظفون"]]:[])]:[["o","📋 الطلبات"]];
   if(!tabs.some(([k])=>k==tab))tab=tabs[0][0];
-  const showBar=canEdit&&tab!="o"&&tab!="u";
+  const showBar=canEdit&&tab!="o"&&tab!="u"&&tab!="r";
   a.innerHTML=top+`<div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${tab==k?"on":""}" onclick="go('${k}')">${l}</button>`).join("")}</div>`+
-    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():tab=="o"?ordH():tab=="u"?staffH():banksH())+(showBar?`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`:"");
+    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():tab=="o"?ordH():tab=="r"?repH():tab=="u"?staffH():banksH())+(showBar?`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`:"");
   bar();
   if(tab=="p")npc();
 }
