@@ -133,6 +133,15 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .pda{padding:14px;font-size:16px;width:100%}
 .toast{z-index:60}
 @media(prefers-reduced-motion:reduce){.bn,.bn:before,.bn .ic,.off{animation:none;transition:none}}
+.so{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.68);color:#fff;text-align:center;font-weight:800;padding:5px;font-size:13px;z-index:2}
+.p.sold .ph,.p.sold .em{opacity:.35}
+.add:disabled{background:#9aa0a6!important;color:#fff;cursor:not-allowed;box-shadow:none}
+.fv{position:absolute;top:8px;right:8px;z-index:3;border:0;background:rgba(255,255,255,.92);border-radius:50%;width:34px;height:34px;font-size:18px;line-height:1;padding:0;cursor:pointer}
+.lowst{color:#e67e22;font-weight:700;font-size:12.5px;margin-top:4px}
+.soldb{background:#fdecea;color:#c0392b;border-radius:12px;padding:10px;font-weight:800;text-align:center;margin:10px 0}
+.pdact{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.offb{background:#fff4e5;color:#8a5a00;border-bottom:1px solid #f2d9a6;padding:8px 12px;font-size:13px;font-weight:700;text-align:center}
+.pwb{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#e8f5e9;color:#1b5e20;border-bottom:1px solid #b9dfbc;padding:8px 12px;font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -157,9 +166,14 @@ const pays=()=>[...S().wallets.map(w=>({t:"محفظة "+w.n,d:w.num+(w.holder?" 
 const CI={"مواد غذائية":"🛒","إكسسوارات":"🎧","إلكترونيات":"📱","ملابس":"👕"};
 const GI={},sel={};const gk=t=>GI[t]??(GI[t]=Object.keys(GI).length);
 const nm=p=>p.g?p.g+" ("+p.u+")":p.n;
+const so=p=>!!p&&(!!p.out||(p.q!=null&&+p.q<=0)),stk=p=>(p&&p.q!=null&&!p.out)?+p.q:Infinity;
+const FV={g:()=>LS.g("fav",[]),has:k=>FV.g().includes(k)};
+const keyOf=k=>Object.keys(GI).find(x=>GI[x]==k);
+window.fav=k=>{const n=keyOf(k);if(n==null)return;let l=FV.g();l=l.includes(n)?l.filter(x=>x!=n):[...l,n];LS.s("fav",l);if($("grid"))$("grid").innerHTML=gridH();if(PDK!==null)pdRender()};
+window.setFav=()=>{cat="❤️";sub="الكل";render()};
 const grp=l=>{const m=new Map();l.forEach(p=>{const k=p.g||"#"+p.id;if(!m.has(k))m.set(k,{t:p.g||p.n,k:gk(k),v:[]});m.get(k).v.push(p)});m.forEach(g=>g.v.sort((a,b)=>(a.o||0)-(b.o||0)));return [...m.values()]};
 const selP=g=>g.v.find(x=>x.id==sel[g.k])||g.v[0];
-const card=g=>{const p=selP(g),f=g.v[0];return `<div class="p"><div class="img" data-s="${esc(f.s||"")}" onclick="openP(${g.k})">${f.img?`<img class="ph" src="${f.img}" alt="">`:`<span class="em">${f.e||"🛍️"}</span>`}${p.old>p.p?`<span class="off" dir="ltr">-${Math.round((p.old-p.p)/p.old*100)}%</span>`:""}</div><div class="pb"><div class="pn" onclick="openP(${g.k})">${esc(g.t)}</div>${g.v.length>1?`<div class="us">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pickU(${g.k},${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="sub">${esc(p.u)}</div>`:"")}<div class="pp">${p.old>p.p?`<s class="was">${fm(p.old)}</s> `:""}${fm(p.p)} <small>${cur()}</small></div><button class="add" onclick="add(${p.id})">＋ أضف للسلة</button></div></div>`};
+const card=g=>{const p=selP(g),f=g.v[0];return `<div class="p${so(p)?" sold":""}"><div class="img" data-s="${esc(f.s||"")}" onclick="openP(${g.k})"><button class="fv" onclick="event.stopPropagation();fav(${g.k})">${FV.has(keyOf(g.k))?"❤️":"🤍"}</button>${so(p)?`<span class="so">نفذت الكمية</span>`:""}${f.img?`<img class="ph" src="${f.img}" alt="">`:`<span class="em">${f.e||"🛍️"}</span>`}${p.old>p.p?`<span class="off" dir="ltr">-${Math.round((p.old-p.p)/p.old*100)}%</span>`:""}</div><div class="pb"><div class="pn" onclick="openP(${g.k})">${esc(g.t)}</div>${g.v.length>1?`<div class="us">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pickU(${g.k},${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="sub">${esc(p.u)}</div>`:"")}<div class="pp">${p.old>p.p?`<s class="was">${fm(p.old)}</s> `:""}${fm(p.p)} <small>${cur()}</small></div>${so(p)?`<button class="add" disabled>نفذت الكمية</button>`:`${stk(p)<=10?`<div class="lowst">باقي ${stk(p)} فقط</div>`:""}<button class="add" onclick="add(${p.id})">＋ أضف للسلة</button>`}</div></div>`};
 const pickU=(k,id)=>{sel[k]=id;if($("grid"))$("grid").innerHTML=gridH();if($("offs"))$("offs").innerHTML=offsH();if(PDK!==null)pdRender()};
 const hkey=s=>{let h=5381;for(const c of String(s))h=((h<<5)+h+c.codePointAt(0))>>>0;return h.toString(36)};
 const BIGI={};
@@ -176,20 +190,22 @@ window.backP=()=>{if(PDK!==null)history.back()};
 const closeP=()=>{PDK=null;const v=$("pdv");v.style.display="none";v.innerHTML="";document.body.style.overflow="";if($("grid"))$("grid").innerHTML=gridH();if($("offs"))$("offs").innerHTML=offsH();const n=$("nav");if(n)n.innerHTML=navV()};
 addEventListener("popstate",()=>{if(PDK!==null)closeP()});
 window.pdU=id=>{sel[PDK]=id;pdRender()};
-window.pdQ=d=>{PDQ=Math.max(1,Math.min(99,PDQ+d));pdRender()};
-window.pdAdd=()=>{const g=pdGroup(PDK);if(!g)return;const p=selP(g);cart[p.id]=(cart[p.id]||0)+PDQ;LS.s("cart",cart);toast("تمت الإضافة للسلة ✓");PDQ=1;const n=$("nav");if(n)n.innerHTML=navV();pdRender()};
+window.pdQ=d=>{const g=pdGroup(PDK),mx=g?Math.min(99,stk(selP(g))):99;PDQ=Math.max(1,Math.min(mx,PDQ+d));pdRender()};
+window.shareP=()=>{const n=curKey();if(n==null)return;const u=location.origin+location.pathname+"?p="+encodeURIComponent(n),t=n+" — "+S().name;if(navigator.share)navigator.share({title:t,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast("تم نسخ الرابط ✓")).catch(()=>toast(u));else toast(u)};
+let deepDone=false;function deep(fin){if(deepDone)return;try{const n=new URLSearchParams(location.search).get("p");if(!n){deepDone=true;return}if(!D.products.some(x=>(x.g||"#"+x.id)==n&&!x.hide)){if(fin)deepDone=true;return}deepDone=true;if($("grid"))$("grid").innerHTML=gridH();openP(gk(n))}catch(e){}}
+window.pdAdd=()=>{const g=pdGroup(PDK);if(!g)return;const p=selP(g);if(so(p))return toast("نفذت الكمية");if((cart[p.id]||0)+PDQ>stk(p))return toast("المتوفر "+p.q+" فقط");cart[p.id]=(cart[p.id]||0)+PDQ;LS.s("cart",cart);toast("تمت الإضافة للسلة ✓");PDQ=1;const n=$("nav");if(n)n.innerHTML=navV();pdRender()};
 function pdRender(){
   const g=pdGroup(PDK),v=$("pdv");if(!g){closeP();return}
   const p=selP(g),f=g.v[0],disc=p.old>p.p?Math.round((p.old-p.p)/p.old*100):0;
   const same=grp(D.products.filter(x=>!x.hide&&x.c==f.c&&x.s==f.s&&(x.g||"#"+x.id)!=(f.g||"#"+f.id))).slice(0,8);
   v.innerHTML=`<div class="pdh"><button class="pdb" onclick="backP()">‹ رجوع</button><span>تفاصيل المنتج</span></div>
    <div class="pdi">${(BIGI[curKey()]||f.img)?`<img src="${BIGI[curKey()]||f.img}" alt="">`:`<span class="em">${f.e||"🛍️"}</span>`}${disc?`<span class="off" dir="ltr">-${disc}%</span>`:""}</div>
-   <div class="pdc"><h2>${esc(g.t)}</h2><div class="pdm">${esc(f.c||"")}${f.s?" › "+esc(f.s):""}</div>
+   <div class="pdc"><h2>${esc(g.t)}</h2><div class="pdact"><button class="chip" onclick="fav(${PDK})">${FV.has(curKey())?"❤️ في المفضلة":"🤍 أضف للمفضلة"}</button><button class="chip" onclick="shareP()">🔗 مشاركة</button></div><div class="pdm">${esc(f.c||"")}${f.s?" › "+esc(f.s):""}</div>
     ${g.v.length>1?`<div class="us" style="margin:10px 0">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pdU(${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="pdm">الوحدة: ${esc(p.u)}</div>`:"")}
     <div class="pdp">${p.old>p.p?`<s class="was">${fm(p.old)}</s> `:""}${fm(p.p)} <small>${cur()}</small></div>
     ${f.d?`<div class="pdd">${esc(f.d).replace(/\n/g,"<br>")}</div>`:""}
-    <div class="qty"><button onclick="pdQ(-1)">−</button><b>${PDQ}</b><button onclick="pdQ(1)">＋</button><span class="pdt">${fm(p.p*PDQ)} ${cur()}</span></div>
-    <button class="add pda" onclick="pdAdd()">🛒 أضف للسلة</button>
+    ${so(p)?`<div class="soldb">نفذت الكمية حالياً</div><button class="add pda" disabled>نفذت الكمية</button>`:`${stk(p)<=10?`<div class="lowst" style="margin:8px 0">باقي ${stk(p)} فقط</div>`:""}<div class="qty"><button onclick="pdQ(-1)">−</button><b>${PDQ}</b><button onclick="pdQ(1)">＋</button><span class="pdt">${fm(p.p*PDQ)} ${cur()}</span></div>
+    <button class="add pda" onclick="pdAdd()">🛒 أضف للسلة</button>`}
     ${same.length?`<div class="sec" style="margin:18px 0 8px;padding:0">منتجات مشابهة</div><div class="hs" style="margin:0 -14px">${same.map(card).join("")}</div>`:""}</div>`;
   v.style.display="block";document.body.style.overflow="hidden";
 }
@@ -210,6 +226,7 @@ const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ�
 const mt=(p,s)=>{const t=nz(p.n+" "+(p.g||"")+" "+(p.s||"")),ws=nz(s).split(/\s+/).filter(Boolean);return ws.every(w=>t.includes(w))};
 function gridH(){
   const s=q.trim();let h="";
+  if(cat=="❤️"){const fl=FV.g(),l=D.products.filter(p=>!p.hide&&fl.includes(p.g||"#"+p.id)&&mt(p,s));return l.length?`<div class="sec">❤️ مفضلتي</div>`+grp(l).map(card).join(""):'<div class="empty">ما أضفت شيئاً للمفضلة بعد. اضغط 🤍 على أي منتج.</div>'}
   D.cats.filter(c=>cat=="الكل"||c==cat).forEach(c=>{
     const all=D.products.filter(p=>!p.hide&&p.c==c&&mt(p,s));
     const ss=D.subs[c]||[],pick=sub=="الكل"||cat!=c,parts=[];
@@ -225,14 +242,14 @@ function home(){
   const s=S(),ss=cat!="الكل"?(D.subs[cat]||[]):[];
   return `<header class="hd"><div class="brand" id="brd"${q.trim()?' style="display:none"':""}>${s.logo?`<img class="logo" src="${s.logo}" alt="">`:""}<div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.hours||"")}</div>${s.eta?`<div class="pill">🚚 ${esc(s.eta)}</div>`:""}</div></div><input class="search" placeholder="🔍 ابحث عن منتج..." value="${esc(q)}" oninput="q=this.value;$('grid').innerHTML=gridH();$('offs').innerHTML=offsH();$('top').style.display=$('brd').style.display=q.trim()?'none':''"></header>
   <div id="top"${q.trim()?' style="display:none"':""}>${instH()}${bnrH()}
-  <div class="chips">${["الكل",...D.cats].map((c,i)=>`<button class="chip ${c==cat?"on":""}" onclick="setCat(${i-1})">${CI[c]?CI[c]+" ":""}${esc(c)}</button>`).join("")}</div>
+  <div class="chips">${["الكل",...D.cats].map((c,i)=>`<button class="chip ${c==cat?"on":""}" onclick="setCat(${i-1})">${CI[c]?CI[c]+" ":""}${esc(c)}</button>`).join("")}<button class="chip ${cat=="❤️"?"on":""}" onclick="setFav()">❤️ المفضلة</button></div>
   ${ss.length?`<div class="chips" style="padding-top:0">${["الكل",...ss].map((c,i)=>`<button class="chip sm ${c==sub?"on":""}" onclick="setSub(${i-1})">${esc(c)}</button>`).join("")}</div>`:""}</div>
   <div id="offs">${offsH()}</div><div class="grid" id="grid">${gridH()}</div>`;
 }
 const setCat=i=>{cat=i<0?"الكل":D.cats[i];sub="الكل";render()};
 const setSub=i=>{sub=i<0?"الكل":D.subs[cat][i];render()};
-function add(id){cart[id]=(cart[id]||0)+1;LS.s("cart",cart);toast("تمت الإضافة ✓");$("nav").innerHTML=navV()}
-function chg(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];LS.s("cart",cart);render()}
+function add(id){const p=P(id);if(so(p))return toast("نفذت الكمية");if(p&&(cart[id]||0)+1>stk(p))return toast("المتوفر "+p.q+" فقط");cart[id]=(cart[id]||0)+1;LS.s("cart",cart);toast("تمت الإضافة ✓");$("nav").innerHTML=navV()}
+function chg(id,d){const p=P(id);if(d>0&&p&&(cart[id]||0)+d>stk(p))return toast("المتوفر "+p.q+" فقط");cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];LS.s("cart",cart);render()}
 
 /* ---------- السلة والطلب ---------- */
 function cartV(){
@@ -240,7 +257,7 @@ function cartV(){
   if(!e.length)return `<div class="pg"><h1>🛒 السلة</h1><div class="empty">السلة فارغة</div></div>`;
   const sb=subtotal(),z=co.zone>=0?s.zones[co.zone]:null,fee=z?+z.fee:0;
   return `<div class="pg"><h1>🛒 السلة</h1>
-  ${e.map(([id,n])=>{const p=P(id);return `<div class="row"><div class="e">${thumb(p)}</div><div class="i"><div>${esc(nm(p))}</div><div class="pp">${fm(p.p*n)} ${cur()}</div></div><div class="q"><button onclick="chg(${id},1)">+</button><b>${n}</b><button onclick="chg(${id},-1)">−</button></div></div>`}).join("")}
+  ${e.map(([id,n])=>{const p=P(id);return `<div class="row"><div class="e">${thumb(p)}</div><div class="i"><div>${esc(nm(p))}</div><div class="pp">${fm(p.p*n)} ${cur()}</div>${so(p)||n>stk(p)?`<div class="lowst" style="color:#c0392b">${so(p)?"نفذت الكمية، احذفه من السلة":"المتوفر "+p.q+" فقط"}</div>`:""}</div><div class="q"><button onclick="chg(${id},1)">+</button><b>${n}</b><button onclick="chg(${id},-1)">−</button></div></div>`}).join("")}
   <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
   <label class="lbl">منطقة التوصيل</label><select class="f" onchange="co.zone=+this.value;render()"><option value="-1">اختر المنطقة</option>${s.zones.map((x,i)=>`<option value="${i}" ${co.zone==i?"selected":""}>${esc(x.n)} — ${fm(x.fee)} ${cur()}</option>`).join("")}</select>
@@ -258,7 +275,8 @@ const pickRt=i=>{const f=i.files[0];if(f)shrink(f,1000,(u,b)=>{rt.file=b;rt.url=
 const pickLogo=i=>{const f=i.files[0];if(f)shrink(f,220,u=>{ed.logo=u;render()})};
 const pickBtns=h=>`<div class="tl" style="gap:8px"><label class="pk">📷 تصوير<input type="file" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="${h}(this)"></label><label class="pk">🖼️ إرفاق صورة<input type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="${h}(this)"></label></div>`;
 const rcBlock=()=>`<label class="lbl">صورة سند الحوالة</label>`+pickBtns("pickRc")+`<div class="sub">لو ما اشتغلت الكاميرا اضغط «إرفاق صورة» واختر الكاميرا أو المعرض، أو أرسل السند في واتساب بعد الطلب.</div>`+(rcptUrl?`<img src="${rcptUrl}" alt="" style="max-width:140px;border-radius:12px;margin:6px 0">`:"");
-function sendWa(msg,file,ok){
+function sendWa(msg,file,ok,no){
+  if(!navigator.onLine){const w=PW.g();w.push({no:no||"",msg:msg.replace("(مرفق صورة السند ✅)","(سأرسل صورة السند لاحقاً)"),t:Date.now()});PW.s(w);toast("لا يوجد إنترنت — حُفظ طلبك وسيُرسل عند عودة النت");ok();return}
   const wa=()=>{window.open("https://wa.me/"+S().whatsapp+"?text="+encodeURIComponent(msg),"_blank");ok()};
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){toast("اختر واتساب ثم محادثة المتجر "+S().whatsapp);navigator.share({files:[file],text:msg}).then(ok).catch(e=>{if(!e||e.name!="AbortError")wa()})}
   else{wa();if(file)toast("أرفق صورة السند داخل محادثة واتساب")}
@@ -285,6 +303,7 @@ function order(){
   const e=Object.entries(cart).filter(([id])=>P(id)),s=S(),py=pays();
   if(!prof.name||!prof.phone||!prof.addr)return toast("أكمل الاسم والجوال والعنوان");
   if(s.reqLoc!==false&&!locUrl())return toast("حدّد موقعك بزر 📍 أو الصق رابط الموقع، لازم لتوصيل طلبك");
+  const bad=e.find(([id,n])=>{const p=P(id);return so(p)||n>stk(p)});if(bad)return toast("«"+nm(P(bad[0]))+"» نفذت أو الكمية أكبر من المتوفر");
   if(co.zone<0)return toast("اختر منطقة التوصيل");
   if(py.length&&co.pay<0)return toast("اختر طريقة الدفع");
   const sb=subtotal();if(s.minOrder&&sb<s.minOrder)return toast("الحد الأدنى للطلب "+fm(s.minOrder)+" "+s.cur);
@@ -302,7 +321,7 @@ function order(){
     "المنتجات: "+fm(sb)+" "+s.cur,"التوصيل ("+z.n+"): "+fm(z.fee)+" "+s.cur,"*الإجمالي: "+fm(tot)+" "+s.cur+"*",sep,
     ...(py.length?["💳 *طريقة الدفع:* "+py[co.pay].t+(rcpt?" (مرفق صورة السند ✅)":" (سأرسل صورة السند لاحقاً)")]:[]),"",
     "شكراً لتسوقكم من "+s.name+" 🌿",bar].join("\n");
-  sendWa(msg,py.length?rcpt:null,()=>{logFb("orders",no,{no:no,name:prof.name,phone:prof.phone,addr:(String(prof.addr).slice(0,200)+(locUrl()?" | "+locUrl():"")).slice(0,299),zone:z.n,agent:z.agent||"",items:e.map(([id,q])=>{const p=P(id);return {n:nm(p),q:+q,p:+p.p}}),sub:sb,fee:+z.fee,total:tot,pay:py.length?py[co.pay].t:"",rc:!!rcpt,t:Date.now(),st:"new"});orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()});
+  sendWa(msg,py.length?rcpt:null,()=>{logFb("orders",no,{no:no,name:prof.name,phone:prof.phone,addr:(String(prof.addr).slice(0,200)+(locUrl()?" | "+locUrl():"")).slice(0,299),zone:z.n,agent:z.agent||"",items:e.map(([id,q])=>{const p=P(id);return {n:nm(p),q:+q,p:+p.p}}),sub:sb,fee:+z.fee,total:tot,pay:py.length?py[co.pay].t:"",rc:!!rcpt,t:Date.now(),st:"new"});orders.unshift({no:no,d:new Date().toLocaleDateString("ar"),t:tot,n:e.length,items:e.map(([id,q])=>{const p=P(id);return {id:id,n:nm(p),q:+q,p:+p.p}}),ret:[]});LS.s("orders",orders.slice(0,30));cart={};LS.s("cart",cart);co={zone:-1,pay:-1};rcpt=null;rcptUrl="";render()},no);
 }
 function sendReturn(){
   if(!prof.name||!prof.phone)return toast("أكمل اسمك وجوالك من تبويب حسابي أولاً");
@@ -327,13 +346,14 @@ function regRet(){
   Object.keys(cart).forEach(id=>{const p=P(id);if(p&&nm(p)===n)delete cart[id]});LS.s("cart",cart);
 }
 /* ---------- حسابي والمزيد ---------- */
+window.reord=oi=>{const o=orders[oi];if(!o)return;let a=0,sk=0;(o.items||[]).forEach(it=>{const p=P(it.id);if(!p||so(p)){sk++;return}const n=Math.min(stk(p)-(cart[p.id]||0),+it.q);if(n>0){cart[p.id]=(cart[p.id]||0)+n;a++}else sk++});LS.s("cart",cart);toast(a?("أُضيف "+a+" صنف للسلة"+(sk?" (وتعذر "+sk+")":"")):"الأصناف غير متوفرة حالياً");if(a)go("c")};
 function acct(){
   return `<div class="pg"><h1>👤 حسابي</h1><div class="sub" style="margin-bottom:10px">بياناتك تُحفظ على جوالك فقط لتسريع الطلب القادم.</div>
   <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
   <label class="lbl">العنوان</label><input class="f" value="${esc(prof.addr||"")}" oninput="prof.addr=this.value;LS.s('prof',prof)">${locBlock()}
   <h1 style="margin-top:18px">طلباتي السابقة</h1>
-  ${orders.length?orders.map((o,oi)=>{const rr=o.ret||[],rs=rr.reduce((a,x)=>a+x.amt,0);return `<div class="card" style="white-space:normal"><div class="tl"><span>${o.no?`<b>${esc(o.no)}</b> • `:""}${esc(o.d)} — ${o.n} منتج</span><b class="pp">${fm(o.t)} ${cur()}</b></div>${(o.items||[]).map((it,ii)=>`<div class="tl"><span>${esc(it.n)} × ${it.q}</span><button class="chip" onclick="startRet(${oi},${ii})">↩ إرجاع</button></div>`).join("")}${rr.map(x=>`<div class="tl" style="color:#c0392b"><span>↩ مرتجع: ${esc(x.n)} × ${x.q} (${x.st})</span><b>-${fm(x.amt)}</b></div>`).join("")}${rs?`<div class="tl b"><span>الصافي بعد المرتجع</span><b class="pp">${fm(o.t-rs)} ${cur()}</b></div>`:""}</div>`}).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
+  ${orders.length?orders.map((o,oi)=>{const rr=o.ret||[],rs=rr.reduce((a,x)=>a+x.amt,0);return `<div class="card" style="white-space:normal"><div class="tl"><span>${o.no?`<b>${esc(o.no)}</b> • `:""}${esc(o.d)} — ${o.n} منتج</span><b class="pp">${fm(o.t)} ${cur()}</b></div><div class="tl"><button class="chip" onclick="reord(${oi})">🔁 أعد هذا الطلب</button></div>${(o.items||[]).map((it,ii)=>`<div class="tl"><span>${esc(it.n)} × ${it.q}</span><button class="chip" onclick="startRet(${oi},${ii})">↩ إرجاع</button></div>`).join("")}${rr.map(x=>`<div class="tl" style="color:#c0392b"><span>↩ مرتجع: ${esc(x.n)} × ${x.q} (${x.st})</span><b>-${fm(x.amt)}</b></div>`).join("")}${rs?`<div class="tl b"><span>الصافي بعد المرتجع</span><b class="pp">${fm(o.t-rs)} ${cur()}</b></div>`:""}</div>`}).join(""):'<div class="empty">لا توجد طلبات بعد</div>'}</div>`;
 }
 function more(){
   const s=S(),py=pays();
@@ -417,8 +437,12 @@ function navV(){
   return `${cartBar()}<nav>${t.map(([k,i,l])=>`<button class="${tab==k?"on":""}" onclick="go('${k}')"><span>${i}</span>${l}${k=="c"&&cartN()?`<b class="badge">${cartN()}</b>`:""}</button>`).join("")}</nav>`;
 }
 const go=k=>{tab=k;render();scrollTo(0,0)};
-function render(){$("app").innerHTML=({h:home,c:cartV,a:acct,m:more,x:adm})[tab]();$("nav").innerHTML=navV()}
-render();
+const PW={g:()=>LS.g("pw",[]),s:v=>LS.s("pw",v)};
+window.sendPW=i=>{if(!navigator.onLine)return toast("ما زال لا يوجد إنترنت");const w=PW.g(),x=w[i];if(!x)return;window.open("https://wa.me/"+S().whatsapp+"?text="+encodeURIComponent(x.msg),"_blank");w.splice(i,1);PW.s(w);render()};
+window.dropPW=i=>{const w=PW.g();w.splice(i,1);PW.s(w);render()};
+const pendH=()=>{const w=PW.g(),off=!navigator.onLine;return (off?`<div class="offb">📴 أنت بدون إنترنت — تقدر تتصفح وتحفظ طلبك، ويُرسل عند عودة النت</div>`:"")+w.map((x,i)=>`<div class="pwb"><span>📨 طلب ${esc(x.no||"")} محفوظ ولم يُرسل بعد</span><span><button class="chip" onclick="sendPW(${i})">${off?"بانتظار النت":"إرسال الآن"}</button> <button class="chip" onclick="dropPW(${i})">✕</button></span></div>`).join("")};
+function render(){$("app").innerHTML=(tab=="x"?"":pendH())+({h:home,c:cartV,a:acct,m:more,x:adm})[tab]();$("nav").innerHTML=navV()}
+render();setTimeout(deep,400);
 document.title=S().name;
 /* وضع العملاء: بدون إدارة داخل الصفحة */
 /* ---------- تثبيت المتجر كتطبيق ---------- */
@@ -444,18 +468,35 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
 const FBCFG={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
 let FBX=null;
 const fbInit=()=>FBX||(FBX=(async()=>{const [A,F]=await Promise.all([import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js"),import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js")]);return {F,db:F.getFirestore(A.initializeApp(FBCFG))}})());
-const logFb=(col,id,data)=>{fbInit().then(({F,db})=>F.setDoc(F.doc(db,col,id),data)).catch(e=>console.warn("log failed",e))};
-async function loadRemote(){try{
-  const {F,db}=await fbInit();
-  const g=async k=>{const s=await F.getDoc(F.doc(db,"store",k));return s.exists()?JSON.parse(s.data().json):null};
-  const [c,s,im]=await Promise.all([g("catalog"),g("settings"),g("images")]);
-  if(!c||!s||!Array.isArray(c.products)||!c.products.length)return;
+const PQ={g:()=>LS.g("pq",[]),s:v=>LS.s("pq",v)};let flushing=false;
+async function flushQ(){if(flushing||!navigator.onLine||!PQ.g().length)return;flushing=true;
+  try{const {F,db}=await fbInit();for(const it of PQ.g()){const rm=()=>PQ.s(PQ.g().filter(x=>!(x.col==it.col&&x.id==it.id)));
+    try{await Promise.race([F.setDoc(F.doc(db,it.col,it.id),it.data),new Promise((_,r)=>setTimeout(()=>r(new Error("t")),15000))]);rm()}
+    catch(e){if(e&&e.code=="permission-denied")rm();else break}}}catch(e){}
+  flushing=false}
+const logFb=(col,id,data)=>{PQ.s([...PQ.g().filter(x=>!(x.col==col&&x.id==id)),{col,id,data}]);flushQ()};
+addEventListener("online",()=>{flushQ();if(PDK===null&&tab!="x")render()});addEventListener("offline",()=>{if(PDK===null&&tab!="x")render()});
+setTimeout(flushQ,2500);
+const OFF={db:()=>new Promise((ok,no)=>{const r=indexedDB.open("alrishi-offline",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}),
+  async get(){try{const d=await OFF.db();return await new Promise(ok=>{const q=d.transaction("kv").objectStore("kv").get("data");q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)})}catch(e){return null}},
+  async set(v){try{const d=await OFF.db();d.transaction("kv","readwrite").objectStore("kv").put(v,"data")}catch(e){}}};
+function applyData(c,s,im,isRemote){
   D.products=c.products;D.subs=c.subs||D.subs;D.cats=c.cats||D.cats;D.settings=s;
   const first={};
   D.products.forEach(p=>{p.img=undefined;const k=p.g||"#"+p.id;if(!first[k]||(p.o||0)<(first[k].o||0))first[k]=p});
   if(im)Object.keys(first).forEach(k=>{if(im[k])first[k].img=im[k]});
-  document.title=S().name;render();
-}catch(e){console.warn("remote data unavailable",e)}}
+  document.title=S().name;render();deep(isRemote);
+}
+const okData=(c,s)=>c&&s&&Array.isArray(c.products)&&c.products.length;
+async function loadRemote(){
+  const old=await OFF.get();if(old&&okData(old.c,old.s))try{applyData(old.c,old.s,old.im)}catch(e){}
+  try{
+  const {F,db}=await fbInit();
+  const g=async k=>{const s=await F.getDoc(F.doc(db,"store",k));return s.exists()?JSON.parse(s.data().json):null};
+  const [c,s,im]=await Promise.all([g("catalog"),g("settings"),g("images")]);
+  if(!okData(c,s))return;
+  applyData(c,s,im,true);OFF.set({c,s,im,t:Date.now()});
+}catch(e){console.warn("remote data unavailable (using saved copy)",e)}}
 loadRemote();
 </script>
 
