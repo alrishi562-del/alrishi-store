@@ -166,7 +166,10 @@ const pays=()=>[...S().wallets.map(w=>({t:"محفظة "+w.n,d:w.num+(w.holder?" 
 const CI={"مواد غذائية":"🛒","إكسسوارات":"🎧","إلكترونيات":"📱","ملابس":"👕"};
 const GI={},sel={};const gk=t=>GI[t]??(GI[t]=Object.keys(GI).length);
 const nm=p=>p.g?p.g+" ("+p.u+")":p.n;
-const so=p=>!!p&&(!!p.out||(p.q!=null&&+p.q<=0)),stk=p=>(p&&p.q!=null&&!p.out)?+p.q:Infinity;
+const fF=p=>+p.f>1?+p.f:1;
+const gqOf=p=>{if(!p||!p.g)return null;const x=D.products.find(y=>y.g==p.g&&y.gq!=null);return x?+x.gq:null};
+const so=p=>{if(!p)return false;if(p.out)return true;const g=gqOf(p);if(g!=null)return Math.floor(g/fF(p))<=0;return p.q!=null&&+p.q<=0};
+const stk=p=>{if(!p)return Infinity;if(p.out)return 0;const g=gqOf(p);if(g!=null){const used=Object.entries(cart).reduce((t,[id,n])=>{const x=P(id);return t+(x&&x.id!=p.id&&x.g&&x.g==p.g?n*fF(x):0)},0);return Math.max(0,Math.floor((g-used)/fF(p)))}return p.q!=null?+p.q:Infinity};
 const FV={g:()=>LS.g("fav",[]),has:k=>FV.g().includes(k)};
 const keyOf=k=>Object.keys(GI).find(x=>GI[x]==k);
 window.fav=k=>{const n=keyOf(k);if(n==null)return;let l=FV.g();l=l.includes(n)?l.filter(x=>x!=n):[...l,n];LS.s("fav",l);if($("grid"))$("grid").innerHTML=gridH();if(PDK!==null)pdRender()};
@@ -193,7 +196,7 @@ window.pdU=id=>{sel[PDK]=id;pdRender()};
 window.pdQ=d=>{const g=pdGroup(PDK),mx=g?Math.min(99,stk(selP(g))):99;PDQ=Math.max(1,Math.min(mx,PDQ+d));pdRender()};
 window.shareP=()=>{const n=curKey();if(n==null)return;const u=location.origin+location.pathname+"?p="+encodeURIComponent(n),t=n+" — "+S().name;if(navigator.share)navigator.share({title:t,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast("تم نسخ الرابط ✓")).catch(()=>toast(u));else toast(u)};
 let deepDone=false;function deep(fin){if(deepDone)return;try{const n=new URLSearchParams(location.search).get("p");if(!n){deepDone=true;return}if(!D.products.some(x=>(x.g||"#"+x.id)==n&&!x.hide)){if(fin)deepDone=true;return}deepDone=true;if($("grid"))$("grid").innerHTML=gridH();openP(gk(n))}catch(e){}}
-window.pdAdd=()=>{const g=pdGroup(PDK);if(!g)return;const p=selP(g);if(so(p))return toast("نفذت الكمية");if((cart[p.id]||0)+PDQ>stk(p))return toast("المتوفر "+p.q+" فقط");cart[p.id]=(cart[p.id]||0)+PDQ;LS.s("cart",cart);toast("تمت الإضافة للسلة ✓");PDQ=1;const n=$("nav");if(n)n.innerHTML=navV();pdRender()};
+window.pdAdd=()=>{const g=pdGroup(PDK);if(!g)return;const p=selP(g);if(so(p))return toast("نفذت الكمية");if((cart[p.id]||0)+PDQ>stk(p))return toast("المتوفر "+stk(p)+" فقط");cart[p.id]=(cart[p.id]||0)+PDQ;LS.s("cart",cart);toast("تمت الإضافة للسلة ✓");PDQ=1;const n=$("nav");if(n)n.innerHTML=navV();pdRender()};
 function pdRender(){
   const g=pdGroup(PDK),v=$("pdv");if(!g){closeP();return}
   const p=selP(g),f=g.v[0],disc=p.old>p.p?Math.round((p.old-p.p)/p.old*100):0;
@@ -248,8 +251,8 @@ function home(){
 }
 const setCat=i=>{cat=i<0?"الكل":D.cats[i];sub="الكل";render()};
 const setSub=i=>{sub=i<0?"الكل":D.subs[cat][i];render()};
-function add(id){const p=P(id);if(so(p))return toast("نفذت الكمية");if(p&&(cart[id]||0)+1>stk(p))return toast("المتوفر "+p.q+" فقط");cart[id]=(cart[id]||0)+1;LS.s("cart",cart);toast("تمت الإضافة ✓");$("nav").innerHTML=navV()}
-function chg(id,d){const p=P(id);if(d>0&&p&&(cart[id]||0)+d>stk(p))return toast("المتوفر "+p.q+" فقط");cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];LS.s("cart",cart);render()}
+function add(id){const p=P(id);if(so(p))return toast("نفذت الكمية");if(p&&(cart[id]||0)+1>stk(p))return toast("المتوفر "+stk(p)+" فقط");cart[id]=(cart[id]||0)+1;LS.s("cart",cart);toast("تمت الإضافة ✓");$("nav").innerHTML=navV()}
+function chg(id,d){const p=P(id);if(d>0&&p&&(cart[id]||0)+d>stk(p))return toast("المتوفر "+stk(p)+" فقط");cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];LS.s("cart",cart);render()}
 
 /* ---------- السلة والطلب ---------- */
 function cartV(){
@@ -257,7 +260,7 @@ function cartV(){
   if(!e.length)return `<div class="pg"><h1>🛒 السلة</h1><div class="empty">السلة فارغة</div></div>`;
   const sb=subtotal(),z=co.zone>=0?s.zones[co.zone]:null,fee=z?+z.fee:0;
   return `<div class="pg"><h1>🛒 السلة</h1>
-  ${e.map(([id,n])=>{const p=P(id);return `<div class="row"><div class="e">${thumb(p)}</div><div class="i"><div>${esc(nm(p))}</div><div class="pp">${fm(p.p*n)} ${cur()}</div>${so(p)||n>stk(p)?`<div class="lowst" style="color:#c0392b">${so(p)?"نفذت الكمية، احذفه من السلة":"المتوفر "+p.q+" فقط"}</div>`:""}</div><div class="q"><button onclick="chg(${id},1)">+</button><b>${n}</b><button onclick="chg(${id},-1)">−</button></div></div>`}).join("")}
+  ${e.map(([id,n])=>{const p=P(id);return `<div class="row"><div class="e">${thumb(p)}</div><div class="i"><div>${esc(nm(p))}</div><div class="pp">${fm(p.p*n)} ${cur()}</div>${so(p)||n>stk(p)?`<div class="lowst" style="color:#c0392b">${so(p)?"نفذت الكمية، احذفه من السلة":"المتوفر "+stk(p)+" فقط"}</div>`:""}</div><div class="q"><button onclick="chg(${id},1)">+</button><b>${n}</b><button onclick="chg(${id},-1)">−</button></div></div>`}).join("")}
   <label class="lbl">الاسم</label><input class="f" value="${esc(prof.name||"")}" oninput="prof.name=this.value;LS.s('prof',prof)">
   <label class="lbl">رقم الجوال</label><input class="f" inputmode="tel" value="${esc(prof.phone||"")}" oninput="prof.phone=this.value;LS.s('prof',prof)">
   <label class="lbl">منطقة التوصيل</label><select class="f" onchange="co.zone=+this.value;render()"><option value="-1">اختر المنطقة</option>${s.zones.map((x,i)=>`<option value="${i}" ${co.zone==i?"selected":""}>${esc(x.n)} — ${fm(x.fee)} ${cur()}</option>`).join("")}</select>
