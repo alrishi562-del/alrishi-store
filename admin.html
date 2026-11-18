@@ -545,7 +545,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي</b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 18-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
