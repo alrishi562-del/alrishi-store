@@ -333,11 +333,11 @@ window.bnimg=(i,inp)=>{
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{const im=new Image();im.onload=()=>{
-    const W=720,H=266,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+    const W=960,H=540,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
     x.fillStyle="#fff";x.fillRect(0,0,W,H);
-    const sc=Math.max(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;
+    const sc=Math.min(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;
     x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
-    ST.banners[i].img=cv.toDataURL("image/jpeg",.78);touch();render();
+    ST.banners[i].img=cv.toDataURL("image/jpeg",.72);touch();render();
   };im.onerror=()=>alert("تعذّر قراءة الصورة");im.src=r.result};
   r.readAsDataURL(f);
 };

@@ -112,6 +112,7 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .off{position:absolute;top:10px;left:10px;background:#e03131;color:#fff;border-radius:12px;padding:3px 9px;font-weight:800;font-size:13px;z-index:2;animation:pls 1.6s ease-in-out infinite}
 @keyframes pls{50%{transform:scale(1.1)}}
 .was{color:var(--mu);font-size:13px;font-weight:500}
+.bnr.bimg{height:auto;aspect-ratio:16/9}
 .bn.bi:before,.bn.bi .ic{display:none}
 .bn.bi{justify-content:flex-end;cursor:pointer}
 .bn.bt:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6),transparent 65%)}
@@ -228,7 +229,7 @@ const bnrH=()=>{const s=S(),offs=D.products.some(p=>!p.hide&&p.old>p.p);
     ...(offs?[{t:"🔥 تخفيضات اليوم",s:"أسعار مخفضة على منتجات مختارة",c:"#e8590c,#f08c00",e:"🏷️"}]:[]),
     {t:"وفّر أكثر بالكرتون",s:"سعر الكرتون أوفر من شراء الحبة",c:"#5f3dc4,#4263eb",e:"📦"}];
   BN=b;
-  return `<div class="bnr">${b.map((x,i)=>{const c=(x.c||"#0f7b5f,#1fb58a").split(",");return `<div class="bn${i?"":" on"}${x.img?" bi"+((x.t||x.s)?" bt":""):""}" style="${x.img?`background:#222 url('${x.img}') center/cover`:`background:linear-gradient(135deg,${c[0]},${c[1]||c[0]})`}"${x.q?` onclick="bq(${i})"`:""}>${(x.t||!x.img)?`<h2>${esc(x.t)}</h2>`:""}${x.s?`<p>${esc(x.s)}</p>`:""}${x.img?"":`<span class="ic">${x.e||""}</span>`}</div>`}).join("")}<div class="dots">${b.map((x,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div></div>`};
+  return `<div class="bnr${b.some(x=>x.img)?" bimg":""}">${b.map((x,i)=>{const c=(x.c||"#0f7b5f,#1fb58a").split(",");return `<div class="bn${i?"":" on"}${x.img?" bi"+((x.t||x.s)?" bt":""):""}" style="${x.img?`background:#fff url('${x.img}') center/contain no-repeat`:`background:linear-gradient(135deg,${c[0]},${c[1]||c[0]})`}"${x.q?` onclick="bq(${i})"`:""}>${(x.t||!x.img)?`<h2>${esc(x.t)}</h2>`:""}${x.s?`<p>${esc(x.s)}</p>`:""}${x.img?"":`<span class="ic">${x.e||""}</span>`}</div>`}).join("")}<div class="dots">${b.map((x,i)=>`<i class="${i?"":"on"}"></i>`).join("")}</div></div>`};
 setInterval(()=>{const s=document.querySelectorAll(".bn");if(s.length<2)return;const d=document.querySelectorAll(".dots i");let c=[...s].findIndex(x=>x.classList.contains("on"));c=(c+1)%s.length;s.forEach((x,i)=>x.classList.toggle("on",i==c));d.forEach((x,i)=>x.classList.toggle("on",i==c))},4000);
 const cartBar=()=>cartN()&&tab=="h"?`<div class="cb" onclick="go('c')"><span>🛒 ${cartN()} منتج</span><b>${fm(subtotal())} ${cur()}</b><span>عرض السلة ‹</span></div>`:"";
 const nz=t=>String(t||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/(^|\s)ارز/g,"$1رز").toLowerCase();
