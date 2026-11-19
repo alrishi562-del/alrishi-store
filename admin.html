@@ -59,7 +59,7 @@ button{font-family:inherit;cursor:pointer}
 <script>setTimeout(function(){if(!window.__adminOk){var a=document.getElementById("app");if(a)a.innerHTML='<div class="box"><h2>تعذّر تحميل لوحة الإدارة</h2><p>المتصفح لم يستطع تحميل مكتبات Firebase. جرّب: تحديث الصفحة بقوة، أو متصفح آخر، أو إيقاف حاجب الإعلانات/الإضافات، أو شبكة إنترنت أخرى (بعض الشبكات تحجب gstatic.com).</p></div>'}},8000)</script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,EmailAuthProvider,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 window.__adminOk=true;
@@ -159,12 +159,30 @@ window.authGo=async()=>{
   busy=false;if(!U)render();
 };
 window.login=window.authGo;
-window.resendVer=async()=>{try{await sendEmailVerification(auth.currentUser);info="أعدنا إرسال رابط التأكيد."}catch(e){info=fbErr(e)}render()};
+window.resendVer=async()=>{try{await sendEmailVerification(U);info="أعدنا إرسال رابط التأكيد."}catch(e){info=fbErr(e)}render()};
 window.chkVer=async()=>{
-  try{await auth.currentUser.reload();await auth.currentUser.getIdToken(true);U=auth.currentUser}catch(e){info=fbErr(e)}
+  try{await U.reload();await U.getIdToken(true);U=U}catch(e){info=fbErr(e)}
   if(U&&(U.emailVerified)){info="";await enter()}else{info="لسا ما تأكد البريد. افتح الرسالة واضغط على الرابط داخلها، ثم ارجع هنا.";render()}
 };
-window.logout=()=>signOut(auth);
+window.logout=()=>{if(confirm("هل تعرف كلمة المرور؟ بعد الخروج تحتاجها للدخول مرة ثانية.\nاضغط موافق للخروج."))signOut(auth)};
+window.chpw=()=>{
+  const d=document.createElement("div");d.className="ied";d.id="pwm";
+  d.innerHTML=`<div class="bx"><b>🔑 تغيير كلمة المرور</b><label>كلمة المرور الحالية</label><input id="pw0" type="password" autocomplete="current-password"><label>كلمة المرور الجديدة (6 خانات فأكثر)</label><input id="pw1" type="password" autocomplete="new-password"><label>تأكيد الجديدة</label><input id="pw2" type="password" autocomplete="new-password"><div class="err" id="pwe" style="display:none"></div><div class="rw"><button class="btn" id="pwb" onclick="chpwGo()">حفظ</button><button class="btn d" onclick="document.getElementById('pwm').remove()">إلغاء</button></div></div>`;
+  document.body.appendChild(d);
+};
+window.chpwGo=async()=>{
+  const g=i=>document.getElementById(i).value,e=document.getElementById("pwe"),b=document.getElementById("pwb");
+  const bad=m=>{e.textContent=m;e.style.display="block"};
+  const a=g("pw0"),n=g("pw1");
+  if(!a)return bad("اكتب كلمة المرور الحالية");
+  if(n.length<6)return bad("الجديدة قصيرة، 6 خانات على الأقل");
+  if(n!=g("pw2"))return bad("التأكيد غير مطابق");
+  if(n==a)return bad("الجديدة نفس القديمة");
+  b.disabled=true;
+  try{await reauthenticateWithCredential(U,EmailAuthProvider.credential(U.email,a));await updatePassword(U,n);
+    document.getElementById("pwm").remove();alert("✅ تم تغيير كلمة المرور. احفظها في مكان آمن.")}
+  catch(x){b.disabled=false;const c=x.code||"";bad(/wrong-password|invalid-credential/.test(c)?"كلمة المرور الحالية غير صحيحة":/too-many/.test(c)?"محاولات كثيرة، انتظر قليلاً ثم أعد":"تعذّر التغيير: "+(c||x.message))}
+};
 async function detectRole(){
   const em=(U.email||"").toLowerCase();roleErr="";
   if(em!=OWNER){try{await U.reload();await U.getIdToken(true)}catch(e){}}
@@ -577,7 +595,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 أ</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
