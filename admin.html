@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>إدارة أسواق الريشي</title>
 <meta name="robots" content="noindex">
+<link rel="manifest" href="admin.webmanifest">
+<meta name="theme-color" content="#0f7b5f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{--pr:#0f7b5f;--bg:#f4f4f0;--card:#fff;--tx:#1d1d1b;--mu:#777;--bd:#e3e3dc;--rd:#c92a2a}
 @media(prefers-color-scheme:dark){:root{--bg:#121513;--card:#1d211e;--tx:#eee;--mu:#9a9f9b;--bd:#323833}}
@@ -27,6 +30,12 @@ button{font-family:inherit;cursor:pointer}
 .row .sm{flex:0 0 auto}
 .gh{display:flex;gap:10px;align-items:center;margin-bottom:8px}
 .th{width:58px;height:58px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;flex:0 0 58px;border:1px dashed var(--bd);position:relative}
+.ied{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99;display:flex;align-items:center;justify-content:center;padding:10px}
+.ied .bx{background:#fff;border-radius:16px;padding:12px;width:100%;max-width:440px;max-height:96vh;overflow:auto}
+.ied canvas{width:100%;display:block;border:2px dashed #0f7b5f;border-radius:10px;touch-action:none;background:#eee;cursor:grab}
+.ied .rw{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.ied .rw .btn{flex:1;min-width:30%}
+.ied input[type=range]{flex:1;padding:0}
 .th img{width:100%;height:100%;object-fit:contain}
 .th input{position:absolute;inset:0;opacity:0}
 .v{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:5px;margin-top:6px;align-items:center}
@@ -185,7 +194,7 @@ function listH(){
   return gs.map(g=>{
     const f=g.v[0],cat=f.c,sl=(subs[cat]||[]);
     return `<div class="box"><div class="gh">
-      <div class="th">${IM[g.k]?`<img src="${IM[g.k]}">`:esc(f.e||"🛍️")}<input type="file" accept="image/*" onchange="upl('${esc(g.k)}',this)"></div>
+      <div class="th">${IM[g.k]?`<img src="${IM[g.k]}">`:esc(f.e||"🛍️")}<input type="file" accept="image/*" onchange="upl('${esc(g.k)}',this)"></div>${IM[g.k]?`<button class="btn s sm" onclick="edImg('${esc(g.k)}')">✂️</button>`:""}
       <div style="flex:1"><input value="${esc(g.t)}" onchange="ren('${esc(g.k)}',this.value)">
       <div class="row"><select onchange="setcat('${esc(g.k)}',this.value)">${(C.cats||[]).map(c=>`<option ${c==cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
       ${sl.length?`<select onchange="setsub('${esc(g.k)}',this.value)"><option value=""></option>${sl.map(s=>`<option ${s==f.s?"selected":""}>${esc(s)}</option>`).join("")}</select>`:""}</div></div></div>
@@ -303,16 +312,47 @@ window.ren=(k,v)=>{
 window.setcat=(k,v)=>{allOf(k).forEach(p=>{p.c=v;p.s=""});touch();$("list").innerHTML=listH()};
 window.setdesc=(k,v)=>{allOf(k).forEach(p=>{if(v.trim())p.d=v;else delete p.d});touch()};
 window.setsub=(k,v)=>{allOf(k).forEach(p=>p.s=v);touch()};
-window.upl=(k,inp)=>{
-  const f=inp.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{const im=new Image();im.onload=()=>{
-    const mk=(m,q)=>{const sc=Math.min(1,m/Math.max(im.width,im.height)),w=Math.round(im.width*sc),hh=Math.round(im.height*sc);
-      const cv=document.createElement("canvas");cv.width=w;cv.height=hh;const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,hh);x.imageSmoothingQuality="high";x.drawImage(im,0,0,w,hh);return cv.toDataURL("image/jpeg",q)};
-    IM[k]=mk(300,.74);BIG[k]=mk(900,.82);bigDirty.add(k);touch();reList();
-  };im.onerror=()=>alert("تعذّر قراءة الصورة");im.src=r.result};
-  r.readAsDataURL(f);
-};
+window.upl=(k,inp)=>readF(inp,src=>openIE(src,600,600,"تعديل صورة المنتج",mk=>{
+  IM[k]=mk(300,300).toDataURL("image/jpeg",.74);BIG[k]=mk(900,900).toDataURL("image/jpeg",.82);bigDirty.add(k);touch();reList()}));
+window.edImg=k=>{const s=BIG[k]||IM[k];if(!s)return;openIE(s,600,600,"تعديل صورة المنتج",mk=>{
+  IM[k]=mk(300,300).toDataURL("image/jpeg",.74);BIG[k]=mk(900,900).toDataURL("image/jpeg",.82);bigDirty.add(k);touch();reList()})};
+
+
+/* ---------- محرر الصور ---------- */
+window.IE=null;
+function openIE(src,W,H,title,done,bg){
+  const im=new Image();
+  im.onload=()=>{
+    IE={im,W,H,z:1,ox:0,oy:0,rot:0,bg:bg||"#ffffff",done};
+    const d=document.createElement("div");d.className="ied";d.id="ied";
+    d.innerHTML=`<div class="bx"><b>✂️ ${title}</b><div class="hint" style="margin:4px 0">اسحب الصورة بإصبعك لتحريكها، وكبّر/صغّر بالشريط. الإطار المنقّط هو ما سيظهر للزبون.</div><canvas id="iec" width="${W>H?640:480}" height="${Math.round((W>H?640:480)*H/W)}"></canvas>
+    <div class="rw"><span>🔍</span><input type="range" id="iez" min="20" max="400" value="100" oninput="IE.z=this.value/100;ieDraw()"></div>
+    <div class="rw"><button class="btn s sm" onclick="ieFit('contain')">احتواء كامل</button><button class="btn s sm" onclick="ieFit('cover')">ملء الإطار</button><button class="btn s sm" onclick="IE.rot=(IE.rot+90)%360;ieFit('contain')">↻ تدوير</button></div>
+    <div class="rw"><span>الخلفية</span><input type="color" id="iebg" value="${IE.bg}" style="width:60px;padding:0;height:34px" oninput="IE.bg=this.value;ieDraw()"><button class="btn s sm" onclick="IE.bg='#ffffff';document.getElementById('iebg').value='#ffffff';ieDraw()">أبيض</button></div>
+    <div class="rw"><button class="btn" onclick="ieOk()">✅ اعتماد</button><button class="btn d" onclick="ieClose()">إلغاء</button></div></div>`;
+    document.body.appendChild(d);
+    const c=$("iec");let pts={},last=null,pd=0;
+    c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);pts[e.pointerId]=[e.clientX,e.clientY];last=null;pd=0};
+    c.onpointermove=e=>{if(!pts[e.pointerId])return;const ks=Object.keys(pts);const r=c.getBoundingClientRect();
+      if(ks.length==2){pts[e.pointerId]=[e.clientX,e.clientY];const a=pts[ks[0]],b=pts[ks[1]],dd=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pd){IE.z=Math.max(.2,Math.min(4,IE.z*dd/pd));$("iez").value=IE.z*100;ieDraw()}pd=dd;return}
+      const p=pts[e.pointerId];IE.ox+=(e.clientX-p[0])/r.width;IE.oy+=(e.clientY-p[1])/r.height;pts[e.pointerId]=[e.clientX,e.clientY];ieDraw()};
+    c.onpointerup=c.onpointercancel=e=>{delete pts[e.pointerId];pd=0};
+    ieFit('contain');
+  };
+  im.onerror=()=>alert("تعذّر قراءة الصورة");im.src=src;
+}
+function ieDims(){const r=IE.rot%180;return r?[IE.im.height,IE.im.width]:[IE.im.width,IE.im.height]}
+function ieFit(m){const [w,h]=ieDims();IE.ox=0;IE.oy=0;const b=Math.min(IE.W/w,IE.H/h),cv=Math.max(IE.W/w,IE.H/h);IE.z=m=="cover"?cv/b:1;$("iez").value=Math.min(400,Math.max(20,IE.z*100));ieDraw()}
+function ieRender(cv,W,H){
+  const x=cv.getContext("2d"),[w,h]=ieDims(),k=W/IE.W,b=Math.min(IE.W/w,IE.H/h)*IE.z*k;
+  x.fillStyle=IE.bg;x.fillRect(0,0,W,H);x.imageSmoothingQuality="high";
+  x.save();x.translate(W/2+IE.ox*W,H/2+IE.oy*H);x.rotate(IE.rot*Math.PI/180);x.scale(b,b);x.drawImage(IE.im,-IE.im.width/2,-IE.im.height/2);x.restore();
+}
+function ieDraw(){const c=$("iec");if(c)ieRender(c,c.width,c.height)}
+function ieClose(){const d=$("ied");if(d)d.remove();IE=null}
+function ieOk(){const f=IE.done,E=IE;f((W,H)=>{const cv=document.createElement("canvas");cv.width=W;cv.height=H;ieRender(cv,W,H);return cv});ieClose()}
+Object.assign(window,{ieFit,ieDraw,ieOk,ieClose});
+function readF(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{cb(r.result);inp.value=""};r.readAsDataURL(f)}
 
 /* ---------- الإعدادات ---------- */
 const colors=[["أخضر","#0f7b5f,#1fb58a"],["برتقالي","#e8590c,#f08c00"],["بنفسجي","#5f3dc4,#4263eb"],["أحمر","#c92a2a,#fa5252"],["أزرق","#1864ab,#339af0"]];
@@ -321,26 +361,17 @@ window.setst=(k,v,num)=>{ST[k]=num?+v:v;touch()};
 function setH(){
   const bn=ST.banners||[];
   return `<div class="box"><h2>🏪 بيانات المتجر</h2>${fld("اسم المتجر","name")}${fld("رقم الواتساب (بالصيغة الدولية)","whatsapp")}${fld("أوقات العمل","hours")}${fld("مدة التوصيل","eta")}${fld("الحد الأدنى للطلب","minOrder","num")}${fld("مدة الإرجاع (أيام)","retDays","num")}${fld("سياسة الإرجاع","returns","area")}<label class="chk" style="margin-top:10px;font-size:14px"><input type="checkbox" ${ST.reqLoc!==false?"checked":""} onchange="setst('reqLoc',this.checked)">إلزام الزبون بتحديد موقعه قبل إرسال الطلب</label></div>
-  <div class="box"><h2>🎞️ البنرات المتحركة</h2><div class="hint">لو تركتها فاضية يظهر البنر الافتراضي. الصورة تُقصّ تلقائياً بنسبة عريضة، فاختر صورة أفقية.</div>
-  ${bn.map((b,i)=>`<div class="box" style="margin:8px 0"><div class="row"><div class="th" style="width:96px;flex:0 0 96px;height:46px;font-size:13px">${b.img?`<img src="${b.img}" style="object-fit:cover">`:"🖼️ صورة"}<input type="file" accept="image/*" onchange="bnimg(${i},this)"></div>${b.img?`<button class="btn d sm" onclick="rmbnimg(${i})">إزالة الصورة</button>`:""}<input value="${esc(b.q||"")}" placeholder="كلمة بحث عند الضغط (اختياري)" onchange="setbn(${i},'q',this.value)"></div>
+  <div class="box"><h2>🎞️ البنرات المتحركة</h2><div class="hint">لو تركتها فاضية يظهر البنر الافتراضي. بعد اختيار الصورة تظهر نافذة تعدّلها: تحريك وتكبير وتصغير لتناسب الإطار 16:9.</div>
+  ${bn.map((b,i)=>`<div class="box" style="margin:8px 0"><div class="row"><div class="th" style="width:96px;flex:0 0 96px;height:46px;font-size:13px">${b.img?`<img src="${b.img}" style="object-fit:cover">`:"🖼️ صورة"}<input type="file" accept="image/*" onchange="bnimg(${i},this)"></div>${b.img?`<button class="btn s sm" onclick="bned(${i})">✂️ تعديل</button><button class="btn d sm" onclick="rmbnimg(${i})">إزالة</button>`:""}<input value="${esc(b.q||"")}" placeholder="كلمة بحث عند الضغط (اختياري)" onchange="setbn(${i},'q',this.value)"></div>
    <input style="margin-top:6px" value="${esc(b.t)}" placeholder="العنوان (اختياري مع الصورة)" onchange="setbn(${i},'t',this.value)">
    <div class="row"><input value="${esc(b.s||"")}" placeholder="النص الصغير" onchange="setbn(${i},'s',this.value)"><input class="sm" style="width:70px" value="${esc(b.e||"")}" placeholder="🏷️" onchange="setbn(${i},'e',this.value)"></div>
    <div class="row"><select onchange="setbn(${i},'c',this.value)">${colors.map(([n,v])=>`<option value="${v}" ${v==b.c?"selected":""}>${n}</option>`).join("")}</select><button class="btn d sm" onclick="delbn(${i})">حذف</button></div></div>`).join("")}
   <div class="row"><button class="btn s sm" onclick="addbn()">+ بنر</button></div></div>`;
 }
 window.setbn=(i,k,v)=>{ST.banners[i][k]=v;touch()};
-window.bnimg=(i,inp)=>{
-  const f=inp.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{const im=new Image();im.onload=()=>{
-    const W=960,H=540,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
-    x.fillStyle="#fff";x.fillRect(0,0,W,H);
-    const sc=Math.min(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;
-    x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
-    ST.banners[i].img=cv.toDataURL("image/jpeg",.72);touch();render();
-  };im.onerror=()=>alert("تعذّر قراءة الصورة");im.src=r.result};
-  r.readAsDataURL(f);
-};
+const bnDone=i=>mk=>{ST.banners[i].img=mk(960,540).toDataURL("image/jpeg",.72);if((ST.banners[i].t||"").trim()=="عرض جديد")ST.banners[i].t="";touch();render()};
+window.bnimg=(i,inp)=>readF(inp,src=>openIE(src,960,540,"تعديل صورة البنر (16:9)",bnDone(i)));
+window.bned=i=>openIE(ST.banners[i].img,960,540,"تعديل صورة البنر (16:9)",bnDone(i));
 window.rmbnimg=i=>{delete ST.banners[i].img;touch();render()};
 window.addbn=()=>{(ST.banners=ST.banners||[]).push({t:"عرض جديد",s:"",c:colors[1][1],e:"🔥"});touch();render()};
 window.delbn=i=>{ST.banners.splice(i,1);touch();render()};
@@ -534,6 +565,7 @@ function bar(){
   s.disabled=busy||!dirty;
 }
 window.save=save;
+function storeH(){return `<div class="row" style="margin:8px 0"><button class="btn s sm" onclick="document.getElementById('sf').src='index.html?v='+Date.now()">🔄 تحديث المعاينة</button><a class="btn s sm" href="index.html" target="_blank" style="text-decoration:none">فتح في صفحة</a></div><iframe id="sf" src="index.html" style="width:100%;height:calc(100vh - 190px);min-height:480px;border:2px solid #0f7b5f;border-radius:14px;background:#fff"></iframe><div class="hint">هذه معاينة المتجر كما يراه الزبون. بعد الحفظ اضغط «تحديث المعاينة».</div>`}
 function render(){
   const a=$("app");
   if(!U){
@@ -545,7 +577,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 18-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 أ</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
@@ -554,11 +586,11 @@ function render(){
     return;
   }
   if(canEdit&&!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}</div>`;return}
-  const tabs=canEdit?[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"],["o","📋 الطلبات"],["r","📊 التقارير"],...(role=="owner"?[["u","👥 الموظفون"]]:[])]:[["o","📋 الطلبات"]];
+  const tabs=canEdit?[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"],["o","📋 الطلبات"],["r","📊 التقارير"],["v","🏪 المتجر"],...(role=="owner"?[["u","👥 الموظفون"]]:[])]:[["o","📋 الطلبات"],["v","🏪 المتجر"]];
   if(!tabs.some(([k])=>k==tab))tab=tabs[0][0];
-  const showBar=canEdit&&tab!="o"&&tab!="u"&&tab!="r";
+  const showBar=canEdit&&tab!="o"&&tab!="u"&&tab!="r"&&tab!="v";
   a.innerHTML=top+`<div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${tab==k?"on":""}" onclick="go('${k}')">${l}</button>`).join("")}</div>`+
-    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():tab=="o"?ordH():tab=="r"?repH():tab=="u"?staffH():banksH())+(showBar?`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`:"");
+    (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():tab=="o"?ordH():tab=="r"?repH():tab=="v"?storeH():tab=="u"?staffH():banksH())+(showBar?`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`:"");
   bar();
   if(tab=="p")npc();
 }
