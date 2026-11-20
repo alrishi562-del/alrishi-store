@@ -60,7 +60,7 @@ button{font-family:inherit;cursor:pointer}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,EmailAuthProvider,reauthenticateWithCredential,updatePassword} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,updateDoc,deleteDoc,where} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 window.__adminOk=true;
 const cfg={apiKey:"AIzaSyBWzRYgl7OR7jeu6BKrbNR7bAdtHZGv4oc",authDomain:"alrishi-store.firebaseapp.com",projectId:"alrishi-store",storageBucket:"alrishi-store.firebasestorage.app",messagingSenderId:"637291205682",appId:"1:637291205682:web:3edf4180e90c67bb36182b"};
@@ -373,6 +373,49 @@ Object.assign(window,{ieFit,ieDraw,ieOk,ieClose});
 function readF(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{cb(r.result);inp.value=""};r.readAsDataURL(f)}
 
 
+
+/* ---------- تنبيه الطلبات + نشر الحالة للزبون ---------- */
+async function pubTrack(no,st){
+  if(role!="owner"&&role!="manager"){trkNote="⚠️ حالتك لا تسمح بنشر الحالة للزبون";return}
+  try{
+    const d=await getDoc(R("track"));let m=d.exists()?(d.data().m||{}):{};
+    m[no]={s:st,t:Date.now()};
+    const ks=Object.keys(m);if(ks.length>400){ks.sort((a,b)=>(m[a].t||0)-(m[b].t||0)).slice(0,ks.length-400).forEach(k=>delete m[k])}
+    await setDoc(R("track"),{m,t:Date.now()});trkNote="";
+  }catch(e){trkNote="⚠️ تغيّرت الحالة لكن تعذّر نشرها للزبون ("+(e.code||e.message)+")"}
+}
+let trkNote="",NSEEN=null,NEWC=0,TTL=document.title,flashT=null;
+function bell(n){
+  try{const A=new (window.AudioContext||window.webkitAudioContext)();[0,.25,.5].forEach(d=>{const o=A.createOscillator(),g=A.createGain();o.frequency.value=d==.25?1100:880;o.connect(g);g.connect(A.destination);g.gain.setValueAtTime(.25,A.currentTime+d);g.gain.exponentialRampToValueAtTime(.001,A.currentTime+d+.22);o.start(A.currentTime+d);o.stop(A.currentTime+d+.24)})}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+}
+function flashTitle(){
+  clearInterval(flashT);
+  if(!NEWC){document.title=TTL;return}
+  let on=0;flashT=setInterval(()=>{on=!on;document.title=on?"🔔 ("+NEWC+") طلب جديد":TTL},1000);
+}
+async function pollOrders(){
+  if(!U||!(role=="owner"||role=="manager"||role=="orders"))return;
+  try{
+    const a=await getDocs(query(collection(db,"orders"),where("st","==","new"),limit(60)));
+    const rows=a.docs.map(d=>({id:d.id,...d.data()}));
+    const ids=new Set(rows.map(r=>r.id));
+    const fresh=NSEEN?rows.filter(r=>!NSEEN.has(r.id)):[];
+    NSEEN=ids;
+    NEWC=rows.length;
+    // دمج الجديدة في القائمة المحمّلة
+    if(ordLoaded){rows.forEach(r=>{const i=ORD.findIndex(x=>x.id==r.id);if(i<0)ORD.unshift(r);else if(ORD[i].st!="new")ORD[i]=r});ORD.sort((x,y)=>(y.t||0)-(x.t||0))}
+    if(fresh.length){bell(fresh.length);const m=document.getElementById("bm");if(m)m.textContent="🔔 وصل طلب جديد";}
+    flashTitle();
+    const t=[...document.querySelectorAll(".tab")].find(b=>(b.getAttribute("onclick")||"").includes("go('o')"));
+    if(t){t.textContent="📋 الطلبات"+(NEWC?" 🔴"+NEWC:"")}
+    if(tab=="o"&&ordLoaded&&(fresh.length)){const l=$("olist");if(l)l.innerHTML=ordListH()}
+  }catch(e){}
+}
+setInterval(pollOrders,60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollOrders()});
+window.pollOrders=pollOrders;
+
 /* ---------- النسخ الاحتياطي ---------- */
 const bkMsg=t=>{const e=document.getElementById("bkm");if(e)e.textContent=t};
 window.bkDown=async()=>{
@@ -510,7 +553,8 @@ function ordListH(){
   const w=nz(oq).split(/\s+/).filter(Boolean);
   const mt=o=>!w.length||w.every(x=>nz([o.no,o.name,o.phone,o.zone,o.prod].join(" ")).includes(x));
   if(ofil=="ret")return RET.filter(mt).map(retCardH).join("")||'<div class="box">لا توجد مرتجعات</div>';
-  return ORD.filter(o=>(ofil=="all"||o.st==ofil)&&mt(o)).map(ordCardH).join("")||'<div class="box">لا توجد طلبات</div>';
+  const od=ORD.filter(o=>o.st=="new"&&Date.now()-(o.t||0)>30*60000).length;
+  return (od&&(ofil=="all"||ofil=="new")?`<div class="err" style="margin:8px 0">⏰ ${od} طلب جديد مضى عليه أكثر من 30 دقيقة بدون تجهيز</div>`:"")+(trkNote?`<div class="err">${esc(trkNote)}</div>`:"")+ORD.filter(o=>(ofil=="all"||o.st==ofil)&&mt(o)).map(ordCardH).join("")||'<div class="box">لا توجد طلبات</div>';
 }
 function ordH(){
   const td=new Date().toDateString(),ts=ORD.filter(o=>new Date(o.t).toDateString()==td&&o.st!="cancel"),sum=ts.reduce((a,o)=>a+(+o.total||0),0);
@@ -538,6 +582,8 @@ window.setSt=async(col,id,v)=>{
   stkNote="";
   try{await updateDoc(doc(db,col,id),{st:v});const a=col=="orders"?ORD:RET,x=a.find(o=>o.id==id);if(x)x.st=v}
   catch(e){alert("تعذّر تغيير الحالة: "+(e.code||e.message));const l=$("olist");if(l)l.innerHTML=ordListH();return}
+  if(col=="orders")pubTrack(id,v);
+  setTimeout(pollOrders,300);
   if(col=="orders"&&C&&(role=="owner"||role=="manager")){
     const o=ORD.find(x=>x.id==id);
     if(o){const key=o.no||o.id,want=STK_ST.includes(v),has=!!(C.ded&&C.ded[key]);let L=null;
@@ -630,7 +676,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 20-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 20-11 ج</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
@@ -646,6 +692,7 @@ function render(){
     (tab=="p"?prodH():tab=="s"?setH():tab=="z"?zonesH():tab=="t"?patchH():tab=="o"?ordH():tab=="r"?repH():tab=="v"?storeH():tab=="u"?staffH():banksH())+(showBar?`<div class="bar" id="bar"><span class="msg" id="bm"></span><button class="btn" id="bs" onclick="save()">💾 حفظ</button></div>`:"");
   bar();
   if(tab=="p")npc();
+  setTimeout(pollOrders,200);
 }
 render();
 window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
