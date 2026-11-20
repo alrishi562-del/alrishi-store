@@ -136,7 +136,7 @@ async function enter(){
   err="";role="none";ordLoaded=false;ORD=[];RET=[];
   if(U){
     await detectRole();
-    if(role=="owner"||role=="manager"){try{await load()}catch(e){err="تعذّر قراءة البيانات: "+(e.code||e.message)}}
+    if(role=="owner"||role=="manager"){try{await Promise.race([load(),new Promise((_,j)=>setTimeout(()=>j({code:"timeout"}),30000))])}catch(e){err=e.code=="timeout"?"الاتصال بطيء أو متقطع، لم تُحمَّل البيانات. اضغط «إعادة المحاولة».":"تعذّر قراءة البيانات: "+(e.code||e.message)}}
     if(role=="orders")tab="o";
   }
   render();
@@ -372,6 +372,40 @@ function ieOk(){const f=IE.done,E=IE;f((W,H)=>{const cv=document.createElement("
 Object.assign(window,{ieFit,ieDraw,ieOk,ieClose});
 function readF(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{cb(r.result);inp.value=""};r.readAsDataURL(f)}
 
+
+/* ---------- النسخ الاحتياطي ---------- */
+const bkMsg=t=>{const e=document.getElementById("bkm");if(e)e.textContent=t};
+window.bkDown=async()=>{
+  if(dirty&&!confirm("عندك تعديلات غير محفوظة لن تدخل في النسخة. تكمل؟"))return;
+  bkMsg("جاري تجهيز النسخة… (قد تأخذ دقيقة)");
+  try{
+    const out={app:"alrishi-backup",v:1,t:new Date().toISOString(),store:{},costs:null,orders:[],returns:[]};
+    const st=await getDocs(collection(db,"store"));st.forEach(d=>{out.store[d.id]=d.data()});
+    try{const c=await getDoc(doc(db,"private","costs"));if(c.exists())out.costs=c.data()}catch(e){}
+    try{const o=await getDocs(query(collection(db,"orders"),orderBy("t","desc"),limit(3000)));out.orders=o.docs.map(d=>({id:d.id,...d.data()}));
+      const r=await getDocs(query(collection(db,"returns"),orderBy("t","desc"),limit(1000)));out.returns=r.docs.map(d=>({id:d.id,...d.data()}))}catch(e){bkMsg("تنبيه: تعذّرت قراءة الطلبات ("+(e.code||e.message)+")")}
+    const blob=new Blob([JSON.stringify(out)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="alrishi-backup-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();a.remove();
+    bkMsg("✅ تم تنزيل النسخة ("+Object.keys(out.store).length+" ملف بيانات، "+out.orders.length+" طلب). احفظها في جيميل أو درايف أيضاً.");
+  }catch(e){bkMsg("تعذّر: "+(e.code||e.message))}
+};
+window.bkRestore=inp=>{
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=async()=>{
+    inp.value="";let o;
+    try{o=JSON.parse(r.result);if(o.app!="alrishi-backup"||!o.store)throw 0}catch(e){return bkMsg("هذا ليس ملف نسخة احتياطية صحيح")}
+    if(!confirm("سيتم استبدال المنتجات والإعدادات والصور الحالية بنسخة بتاريخ "+(o.t||"").slice(0,10)+".\nالطلبات لا تتأثر.\nهل أنت متأكد؟"))return;
+    bkMsg("جاري الاستعادة…");
+    try{
+      for(const [id,d] of Object.entries(o.store))await setDoc(doc(db,"store",id),d);
+      if(o.costs&&role=="owner")await setDoc(doc(db,"private","costs"),o.costs);
+      dirty=false;bkMsg("✅ تمت الاستعادة. سيُعاد تحميل الصفحة…");setTimeout(()=>location.reload(),1200);
+    }catch(e){bkMsg("تعذّرت الاستعادة: "+(e.code||e.message))}
+  };
+  r.readAsText(f);
+};
+
 /* ---------- الإعدادات ---------- */
 const colors=[["أخضر","#0f7b5f,#1fb58a"],["برتقالي","#e8590c,#f08c00"],["بنفسجي","#5f3dc4,#4263eb"],["أحمر","#c92a2a,#fa5252"],["أزرق","#1864ab,#339af0"]];
 const fld=(l,k,t)=>`<label>${l}</label>${t=="area"?`<textarea rows="3" onchange="setst('${k}',this.value)">${esc(ST[k]||"")}</textarea>`:`<input ${t=="num"?'type="number" inputmode="numeric"':""} value="${esc(ST[k]??"")}" onchange="setst('${k}',this.value,${t=="num"})">`}`;
@@ -384,7 +418,8 @@ function setH(){
    <input style="margin-top:6px" value="${esc(b.t)}" placeholder="العنوان (اختياري مع الصورة)" onchange="setbn(${i},'t',this.value)">
    <div class="row"><input value="${esc(b.s||"")}" placeholder="النص الصغير" onchange="setbn(${i},'s',this.value)"><input class="sm" style="width:70px" value="${esc(b.e||"")}" placeholder="🏷️" onchange="setbn(${i},'e',this.value)"></div>
    <div class="row"><select onchange="setbn(${i},'c',this.value)">${colors.map(([n,v])=>`<option value="${v}" ${v==b.c?"selected":""}>${n}</option>`).join("")}</select><button class="btn d sm" onclick="delbn(${i})">حذف</button></div></div>`).join("")}
-  <div class="row"><button class="btn s sm" onclick="addbn()">+ بنر</button></div></div>`;
+  <div class="row"><button class="btn s sm" onclick="addbn()">+ بنر</button></div></div>
+  <div class="box"><h2>🛟 نسخة احتياطية</h2><div class="hint">ينزّل ملفاً فيه المنتجات والأسعار والصور والإعدادات وأسعار الشراء والطلبات. احتفظ به في جوالك وجيميل. الاستعادة تعيد المنتجات والإعدادات فقط ولا تلمس الطلبات.</div><div class="row"><button class="btn" onclick="bkDown()">⬇️ تنزيل نسخة احتياطية</button></div><div class="row"><label class="btn s" style="margin:0;display:inline-block">⬆️ استعادة من نسخة<input type="file" accept=".json,application/json" style="display:none" onchange="bkRestore(this)"></label></div><div class="hint" id="bkm"></div></div>`;
 }
 window.setbn=(i,k,v)=>{ST.banners[i][k]=v;touch()};
 const bnDone=i=>mk=>{ST.banners[i].img=mk(960,540).toDataURL("image/jpeg",.72);if((ST.banners[i].t||"").trim()=="عرض جديد")ST.banners[i].t="";touch();render()};
@@ -595,7 +630,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 ج</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 20-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
@@ -603,7 +638,7 @@ function render(){
     a.innerHTML=top+`<div class="box"><h2>أول مرة؟</h2><p>القاعدة فاضية. اضغط الزر لنقل بيانات المتجر الحالية (المنتجات والأسعار والإعدادات والصور) إلى قاعدة البيانات.</p><button class="btn" ${busy?"disabled":""} onclick="seed()">استيراد بيانات المتجر</button>${err?`<div class="err">${esc(err)}</div>`:""}</div>`;
     return;
   }
-  if(canEdit&&!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}</div>`;return}
+  if(canEdit&&!C){a.innerHTML=top+`<div class="box">${esc(err)||"جاري التحميل…"}<div class="row" style="margin-top:10px"><button class="btn" onclick="location.reload()">🔄 إعادة المحاولة</button></div><div class="hint">لو استمر، افتح المتجر نفسه للتأكد من النت، أو جرّب شبكة أخرى (واي فاي/بيانات).</div></div>`;return}
   const tabs=canEdit?[["p","📦 المنتجات"],["s","⚙️ الإعدادات"],["z","🚚 التوصيل"],["b","🏦 الحسابات"],["t","📥 تعديلات"],["o","📋 الطلبات"],["r","📊 التقارير"],["v","🏪 المتجر"],...(role=="owner"?[["u","👥 الموظفون"]]:[])]:[["o","📋 الطلبات"],["v","🏪 المتجر"]];
   if(!tabs.some(([k])=>k==tab))tab=tabs[0][0];
   const showBar=canEdit&&tab!="o"&&tab!="u"&&tab!="r"&&tab!="v";
