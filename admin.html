@@ -331,9 +331,9 @@ window.setcat=(k,v)=>{allOf(k).forEach(p=>{p.c=v;p.s=""});touch();$("list").inne
 window.setdesc=(k,v)=>{allOf(k).forEach(p=>{if(v.trim())p.d=v;else delete p.d});touch()};
 window.setsub=(k,v)=>{allOf(k).forEach(p=>p.s=v);touch()};
 window.upl=(k,inp)=>readF(inp,src=>openIE(src,600,600,"تعديل صورة المنتج",mk=>{
-  IM[k]=mk(300,300).toDataURL("image/jpeg",.74);BIG[k]=mk(900,900).toDataURL("image/jpeg",.82);bigDirty.add(k);touch();reList()}));
+  IM[k]=mk(360,360).toDataURL("image/jpeg",.78);BIG[k]=mk(1100,1100).toDataURL("image/jpeg",.86);bigDirty.add(k);touch();reList()}));
 window.edImg=k=>{const s=BIG[k]||IM[k];if(!s)return;openIE(s,600,600,"تعديل صورة المنتج",mk=>{
-  IM[k]=mk(300,300).toDataURL("image/jpeg",.74);BIG[k]=mk(900,900).toDataURL("image/jpeg",.82);bigDirty.add(k);touch();reList()})};
+  IM[k]=mk(360,360).toDataURL("image/jpeg",.78);BIG[k]=mk(1100,1100).toDataURL("image/jpeg",.86);bigDirty.add(k);touch();reList()})};
 
 
 /* ---------- محرر الصور ---------- */
@@ -595,7 +595,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 19-11 ج</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";

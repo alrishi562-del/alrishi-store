@@ -112,6 +112,8 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .off{position:absolute;top:10px;left:10px;background:#e03131;color:#fff;border-radius:12px;padding:3px 9px;font-weight:800;font-size:13px;z-index:2;animation:pls 1.6s ease-in-out infinite}
 @keyframes pls{50%{transform:scale(1.1)}}
 .was{color:var(--mu);font-size:13px;font-weight:500}
+.zb{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;align-items:center;justify-content:center;padding:10px}.zb img{max-width:100%;max-height:92vh;background:#fff;border-radius:14px;touch-action:pinch-zoom}.zb b{position:absolute;top:14px;left:16px;color:#fff;font-size:34px;line-height:1}
+.pdi img{cursor:zoom-in}
 .bnr.bimg{height:auto;aspect-ratio:16/9}
 .bn.bi:before,.bn.bi .ic{display:none}
 .bn.bi{justify-content:flex-end;cursor:pointer}
@@ -204,12 +206,13 @@ window.pdQ=d=>{const g=pdGroup(PDK),mx=g?Math.min(99,stk(selP(g))):99;PDQ=Math.m
 window.shareP=()=>{const n=curKey();if(n==null)return;const u=location.origin+location.pathname+"?p="+encodeURIComponent(n),t=n+" — "+S().name;if(navigator.share)navigator.share({title:t,url:u}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast("تم نسخ الرابط ✓")).catch(()=>toast(u));else toast(u)};
 let deepDone=false;function deep(fin){if(deepDone)return;try{const n=new URLSearchParams(location.search).get("p");if(!n){deepDone=true;return}if(!D.products.some(x=>(x.g||"#"+x.id)==n&&!x.hide)){if(fin)deepDone=true;return}deepDone=true;if($("grid"))$("grid").innerHTML=gridH();openP(gk(n))}catch(e){}}
 window.pdAdd=()=>{const g=pdGroup(PDK);if(!g)return;const p=selP(g);if(so(p))return toast("نفذت الكمية");if((cart[p.id]||0)+PDQ>stk(p))return toast("المتوفر "+stk(p)+" فقط");cart[p.id]=(cart[p.id]||0)+PDQ;LS.s("cart",cart);toast("تمت الإضافة للسلة ✓");PDQ=1;const n=$("nav");if(n)n.innerHTML=navV();pdRender()};
+function zimg(el){const im=el.querySelector("img");if(!im)return;const d=document.createElement("div");d.className="zb";d.innerHTML='<b>×</b><img src="'+im.src+'">';d.onclick=()=>d.remove();document.body.appendChild(d)}
 function pdRender(){
   const g=pdGroup(PDK),v=$("pdv");if(!g){closeP();return}
   const p=selP(g),f=g.v[0],disc=p.old>p.p?Math.round((p.old-p.p)/p.old*100):0;
   const same=grp(D.products.filter(x=>!x.hide&&x.c==f.c&&x.s==f.s&&(x.g||"#"+x.id)!=(f.g||"#"+f.id))).slice(0,8);
   v.innerHTML=`<div class="pdh"><button class="pdb" onclick="backP()">‹ رجوع</button><span>تفاصيل المنتج</span></div>
-   <div class="pdi">${(BIGI[curKey()]||f.img)?`<img src="${BIGI[curKey()]||f.img}" alt="">`:`<span class="em">${f.e||"🛍️"}</span>`}${disc?`<span class="off" dir="ltr">-${disc}%</span>`:""}</div>
+   <div class="pdi" onclick="zimg(this)">${(BIGI[curKey()]||f.img)?`<img src="${BIGI[curKey()]||f.img}" alt="">`:`<span class="em">${f.e||"🛍️"}</span>`}${disc?`<span class="off" dir="ltr">-${disc}%</span>`:""}</div>
    <div class="pdc"><h2>${esc(g.t)}</h2><div class="pdact"><button class="chip" onclick="fav(${PDK})">${FV.has(curKey())?"❤️ في المفضلة":"🤍 أضف للمفضلة"}</button><button class="chip" onclick="shareP()">🔗 مشاركة</button></div><div class="pdm">${esc(f.c||"")}${f.s?" › "+esc(f.s):""}</div>
     ${g.v.length>1?`<div class="us" style="margin:10px 0">${g.v.map(x=>`<button class="u${x.id==p.id?" on":""}" onclick="pdU(${x.id})">${esc(x.u||"")}</button>`).join("")}</div>`:(p.u?`<div class="pdm">الوحدة: ${esc(p.u)}</div>`:"")}
     <div class="pdp">${p.old>p.p?`<s class="was">${fm(p.old)}</s> `:""}${fm(p.p)} <small>${cur()}</small></div>
