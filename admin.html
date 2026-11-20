@@ -269,16 +269,36 @@ const isLinked=k=>allOf(k).some(p=>+p.f>1);
 const gqOfK=k=>{const g=allOf(k).find(x=>x.gq!=null);return g?+g.gq:null};
 function stkRow(p){
   const k=gkey(p),lk=isLinked(k),gq=gqOfK(k),val=lk?(gq!=null?Math.floor(gq/fOf(p)):""):(p.q??"");
-  return `<div class="vc"><span class="pf" style="flex:1.5">يحتوي على كم من أصغر وحدة؟ (الأصغر: فاضي)</span><input type="number" inputmode="numeric" placeholder="مثال: 24" value="${p.f||""}" onchange="setf(${p.id},this.value)"></div>${relH(p)}
+  return `${relH(p)}
   <div class="vc"><input class="sq" data-id="${p.id}" type="number" inputmode="numeric" placeholder="${lk?"الكمية المتوفرة (تتحدث لبقية الوحدات)":"الكمية المتوفرة (فاضي = بدون حد)"}" value="${val}" onchange="${lk?"setgq":"setq"}(${p.id},this.value)"><label class="chk" style="white-space:nowrap"><input type="checkbox" ${p.out?"checked":""} onchange="setv(${p.id},'out',this.checked)">نفذت الكمية</label></div>${lk?`<div class="hint" data-gt="${p.id}">${gq!=null?"المخزون الكلي: "+gq+" من أصغر وحدة":""}</div><div class="vc"><button class="btn s sm" style="flex:1" onclick="stkDet(${p.id})">🧮 إدخال الكمية بالتفصيل (كرتون + شدة + حبة)</button></div>`:""}`}
 
-/* حساب محتوى الوحدة بطريقة: عدد × وحدة أدنى (كرتون = 4 × شدة) */
+/* هيكل التعبئة: كل وحدة تحتوي على (عدد) من الوحدة التي تحتها: كرتون = 12 طبق، طبق = 30 حبة */
 function relH(p){
-  const k=gkey(p);
-  const opts=[`<option value="1">أصغر وحدة (حبة)</option>`].concat(allOf(k).filter(x=>x.id!=p.id&&fOf(x)>1).map(x=>`<option value="${fOf(x)}">${esc(x.u||x.n)} (= ${fOf(x)} حبة)</option>`));
-  return `<div class="vc"><span class="pf" style="flex:1.3">أو احسبها: يحتوي على</span><input type="number" inputmode="numeric" id="rn${p.id}" placeholder="العدد" style="max-width:70px"><select id="ru${p.id}" style="flex:1.4">${opts.join("")}</select><button class="btn s sm" onclick="relSet(${p.id})">احسب</button></div>${p.f>1?`<div class="hint">الآن: ${esc(p.u||"الوحدة")} = ${p.f} من أصغر وحدة</div>`:""}`;
+  const k=gkey(p),oth=allOf(k).filter(x=>x.id!=p.id);
+  const r=p.r!=null?p.r:(+p.f>1&&p.bu==null?p.f:""),bu=p.bu!=null?String(p.bu):"";
+  const smallest=!(r>0)&&p.bu==null;
+  const opts=[`<option value="-" ${smallest?"selected":""}>— هذه أصغر وحدة —</option>`,`<option value="" ${!smallest&&bu==""?"selected":""}>حبة / أصغر وحدة</option>`].concat(oth.map(x=>`<option value="${x.id}" ${bu==String(x.id)?"selected":""}>${esc(x.u||x.n)}</option>`));
+  const f=fOf(p);
+  return `<div class="vc"><span class="pf" style="flex:1.1">يحتوي على</span><input type="number" inputmode="numeric" id="rn${p.id}" value="${smallest?"":r}" placeholder="العدد" style="max-width:76px" onchange="relApply(${p.id})"><select id="ru${p.id}" style="flex:1.6" onchange="relApply(${p.id})">${opts.join("")}</select></div>${f>1?`<div class="hint" data-rt="${p.id}">✔ ${esc(p.u||"الوحدة")} = ${f} من أصغر وحدة</div>`:`<div class="hint" data-rt="${p.id}">هذه أصغر وحدة</div>`}`;
 }
-window.relSet=id=>{const n=Math.floor(+document.getElementById("rn"+id).value),m=+document.getElementById("ru"+id).value;if(!(n>0))return alert("اكتب العدد");setf(id,n*m)};
+function chainTarget(x,all,d){
+  d=d||0;if(d>6)return fOf(x);
+  if(x.bu==null||x.bu==="")return x.r>0?+x.r:null;       // يحتوي على عدد من أصغر وحدة
+  const y=all.find(z=>z.id==x.bu);if(!y)return x.r>0?+x.r:null;
+  const fy=chainTarget(y,all,d+1);return x.r>0?+x.r*(fy||fOf(y)):null;
+}
+window.relApply=id=>{
+  const p=C.products.find(x=>x.id==id);if(!p)return;
+  const n=Math.floor(+document.getElementById("rn"+id).value),sv=document.getElementById("ru"+id).value,k=gkey(p);
+  if(sv=="-"){delete p.r;delete p.bu;setfCore(id,0)}
+  else if(!(n>0)){if(sv==="")delete p.bu;else p.bu=+sv;delete p.r}
+  else{p.r=n;if(sv==="")delete p.bu;else p.bu=+sv}
+  chainFix(k);touch();reList();
+};
+function chainFix(k){
+  const all=allOf(k);
+  for(let it=0;it<4;it++)all.forEach(x=>{if(x.r>0){const t=chainTarget(x,all);if(t&&t!=fOf(x)){setfCore(x.id,t)}}});
+}
 window.stkDet=id=>{
   const p=C.products.find(x=>x.id==id);if(!p)return;const k=gkey(p);
   const vs=allOf(k).slice().sort((a,b)=>fOf(b)-fOf(a));
@@ -290,13 +310,14 @@ window.stkDet=id=>{
 window.stkSum=()=>{let t=0;document.querySelectorAll(".sdi").forEach(e=>{t+=Math.max(0,Math.floor(+e.value||0))*(+e.dataset.f)});const b=document.getElementById("sdt");if(b)b.textContent="المجموع: "+t+" من أصغر وحدة";return t};
 window.stkOk=id=>{const p=C.products.find(x=>x.id==id);if(!p)return;const t=stkSum(),k=gkey(p);allOf(k).forEach(x=>{x.gq=t});document.getElementById("sdm").remove();touch();syncStk(k);reList()};
 const syncStk=k=>setTimeout(()=>{const gq=gqOfK(k);allOf(k).forEach(x=>{const e=document.querySelector('.sq[data-id="'+x.id+'"]');if(e&&document.activeElement!==e)e.value=gq!=null?Math.floor(gq/fOf(x)):"";const t=document.querySelector('[data-gt="'+x.id+'"]');if(t)t.textContent=gq!=null?"المخزون الكلي: "+gq+" من أصغر وحدة":""})},0);
-window.setf=(id,v)=>{const p=C.products.find(x=>x.id==id);if(!p)return;const k=gkey(p),all=allOf(k),was=isLinked(k),old=gqOfK(k);
+function setfCore(id,v){const p=C.products.find(x=>x.id==id);if(!p)return;const k=gkey(p),all=allOf(k),was=isLinked(k),old=gqOfK(k);
   v=Math.floor(+v);if(v>1)p.f=v;else delete p.f;const now=isLinked(k);
   if(now&&!was){const has=all.some(x=>x.q!=null),tot=all.reduce((t,x)=>t+(x.q!=null?+x.q*(x.id==p.id?v:fOf(x)):0),0);
     all.forEach(x=>{delete x.q;if(has)x.gq=tot})}
   else if(!now&&was){all.forEach(x=>{delete x.gq;if(old!=null)x.q=Math.floor(old/fOf(x))})}
   else if(now&&old!=null)all.forEach(x=>x.gq=old);
-  touch();reList()};
+}
+window.setf=(id,v)=>{setfCore(id,v);touch();reList()};
 window.setgq=(id,v)=>{const p=C.products.find(x=>x.id==id);if(!p)return;v=String(v).trim();const k=gkey(p);
   allOf(k).forEach(x=>{if(v===""||isNaN(+v))delete x.gq;else x.gq=Math.max(0,Math.floor(+v))*fOf(p)});touch();syncStk(k)};
 window.setq=(id,v)=>{const p=C.products.find(x=>x.id==id);if(!p)return;v=String(v).trim();if(v===""||isNaN(+v))delete p.q;else p.q=Math.max(0,Math.floor(+v));touch()};
@@ -694,7 +715,7 @@ function render(){
     <div class="hint" style="margin-top:10px">موظف جديد؟ اضغط «حساب جديد» بنفس الإيميل اللي أضافه لك المالك، ثم أكّد بريدك.</div></div>`;
     return;
   }
-  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 21-11 أ</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
+  const top=`<div class="top"><b>إدارة أسواق الريشي <small style="font-weight:400;font-size:10px;color:#888">نسخة 21-11 ب</small></b><span><span class="msg">${esc(U.email)}</span> <button class="btn s sm" onclick="chpw()">🔑</button> <button class="btn d" onclick="logout()">خروج</button></span></div>`;
   if(role=="unverified"){a.innerHTML=top+`<div class="box"><h2>📧 أكّد بريدك الإلكتروني</h2><p>أرسلنا رابط تأكيد إلى <b dir="ltr">${esc(U.email)}</b>. افتح الرسالة (وتفقد الرسائل غير المرغوبة) واضغط على الرابط، ثم ارجع واضغط الزر.</p><div class="row"><button class="btn" onclick="chkVer()">لقد أكّدت بريدي</button><button class="btn s sm" onclick="resendVer()">إعادة إرسال</button></div>${info?`<div class="hint" style="font-size:14px">${esc(info)}</div>`:""}</div>`;return}
   if(role=="none"){a.innerHTML=top+`<div class="box"><h2>لا توجد صلاحية لهذا الحساب</h2><p>الحساب: <b dir="ltr">${esc(U.email)}</b></p><p>${roleErr?"تعذّر قراءة قائمة الموظفين ("+esc(roleErr)+"). تأكد أن قواعد Firebase الجديدة منشورة وأن بريدك مؤكَّد.":"إيميلك غير موجود في قائمة المديرين أو موظفي الطلبات. اطلب من المالك إضافته بنفس هذا الإيميل بالضبط، ثم الضغط على «حفظ الموظفين»."}</p><div class="row"><button class="btn" onclick="retryRole()">🔄 إعادة المحاولة</button></div></div>`;return}
   const canEdit=role=="owner"||role=="manager";
